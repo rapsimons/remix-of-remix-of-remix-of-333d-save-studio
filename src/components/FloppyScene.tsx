@@ -8,12 +8,12 @@ import { DEFAULT_MODEL_URL } from "@/lib/store";
 
 type Props = {
   design: Design;
-  modelUrl?: string;
+  modelUrl?: string | undefined;
   flat: boolean;
   lockX: boolean;
   lockY: boolean;
-  onDoubleTap?: () => void;
-  interactive?: boolean;
+  onDoubleTap?: (() => void) | undefined;
+  interactive?: boolean | undefined;
 };
 
 function normalize(scene: THREE.Object3D) {
