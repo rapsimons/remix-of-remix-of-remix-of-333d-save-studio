@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Btn, Field, Modal, Slider, Toggle, inputClass } from "./ui/kit";
+import { Btn, Field, Modal, Slider, inputClass } from "./ui/kit";
 import { Icon } from "./ui/Icon";
 import { Editor2D } from "./Editor2D";
 import { FloppyViewer } from "./FloppyViewer";
@@ -466,11 +466,6 @@ export function Studio() {
         </div>
       </Modal>
 
-      <Toggle
-        label=""
-        on={false}
-        onChange={() => undefined}
-      />
     </div>
   );
 }
