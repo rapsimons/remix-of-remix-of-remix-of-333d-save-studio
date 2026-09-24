@@ -90,6 +90,39 @@ function normalize(scene: THREE.Object3D) {
   return { object: outer, depth: size.z * scale, faceW: size.x * scale, faceH: size.y * scale };
 }
 
+function createOpticalDiscTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const center = canvas.width / 2;
+  const gradient = ctx.createConicGradient(0.2, center, center);
+  gradient.addColorStop(0, "#d7dde1");
+  gradient.addColorStop(0.12, "#8ee8ef");
+  gradient.addColorStop(0.25, "#f5f7f8");
+  gradient.addColorStop(0.39, "#c59bea");
+  gradient.addColorStop(0.53, "#f2a7b7");
+  gradient.addColorStop(0.67, "#f0de86");
+  gradient.addColorStop(0.82, "#91dce8");
+  gradient.addColorStop(1, "#d7dde1");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.globalAlpha = 0.22;
+  ctx.strokeStyle = "#4e555b";
+  ctx.lineWidth = 1;
+  for (let radius = 48; radius < 252; radius += 4) {
+    ctx.beginPath();
+    ctx.arc(center, center, radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  return texture;
+}
+
 function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true }: Props) {
   const gltf = useGLTF(modelUrl || DEFAULT_MODEL_URL);
   const group = useRef<THREE.Group>(null);
@@ -118,12 +151,67 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     [design.color, design.roughness, design.opacity],
   );
 
+  const metalMaterial = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color("#d7dce0"),
+        metalness: 1,
+        roughness: 0.18,
+        clearcoat: 0.35,
+        clearcoatRoughness: 0.12,
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
+
+  const opticalDiscMaterial = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color("#c8cdd2"),
+        metalness: 0.92,
+        roughness: 0.08,
+        clearcoat: 1,
+        clearcoatRoughness: 0.04,
+        iridescence: 1,
+        iridescenceIOR: 1.45,
+        iridescenceThicknessRange: [180, 900],
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
+
+  const opticalDiscTexture = useMemo(() => createOpticalDiscTexture(), []);
+  const opticalDiscOverlayMaterial = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        map: opticalDiscTexture,
+        color: new THREE.Color("#ffffff"),
+        metalness: 0.82,
+        roughness: 0.12,
+        clearcoat: 1,
+        clearcoatRoughness: 0.03,
+        iridescence: 1,
+        iridescenceIOR: 1.5,
+        iridescenceThicknessRange: [220, 780],
+        side: THREE.DoubleSide,
+      }),
+    [opticalDiscTexture],
+  );
+
   useEffect(() => {
     object.traverse((o) => {
       const mesh = o as THREE.Mesh;
-      if (mesh.isMesh) mesh.material = material;
+      if (!mesh.isMesh) return;
+      const name = mesh.name.toLowerCase();
+      if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
+        mesh.material = opticalDiscMaterial;
+      } else if (name.includes("shutter")) {
+        mesh.material = metalMaterial;
+      } else {
+        mesh.material = material;
+      }
     });
-  }, [object, material]);
+  }, [object, material, metalMaterial, opticalDiscMaterial]);
 
   // pointer gestures
   useEffect(() => {
@@ -194,6 +282,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   });
 
   const off = depth / 2 + 0.004;
+  const discRadius = Math.min(faceW, faceH) * 0.39;
+  const discY = -faceH * 0.08;
   const a = design.alignment;
   const rad = Math.PI / 180;
 
@@ -206,6 +296,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       >
         <primitive object={object} />
       </group>
+      <mesh position={[0, discY, 0]} material={opticalDiscOverlayMaterial}>
+        <ringGeometry args={[discRadius * 0.13, discRadius, 96]} />
+      </mesh>
       {frontTex && (
         <mesh position={[0, 0, off]}>
           <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
@@ -239,16 +332,16 @@ export function FloppyScene(props: Props) {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
       }}
     >
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[3, 4, 5]} intensity={1.6} />
-      <directionalLight position={[-4, -2, -3]} intensity={0.6} />
+      <ambientLight intensity={0.72} />
+      <directionalLight position={[3, 4, 5]} intensity={1.8} />
+      <directionalLight position={[-4, -2, -3]} intensity={0.8} />
       <Suspense fallback={null}>
         <ErrorGuard onError={() => setFailed(true)}>
           <Floppy {...props} />
           <Environment resolution={256}>
-            <Lightformer intensity={2.4} position={[0, 4, 2]} scale={[8, 8, 1]} />
-            <Lightformer intensity={1.2} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
-            <Lightformer intensity={1.2} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />
+            <Lightformer intensity={3} position={[0, 4, 2]} scale={[8, 8, 1]} />
+            <Lightformer intensity={1.8} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
+            <Lightformer intensity={1.8} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />
           </Environment>
         </ErrorGuard>
       </Suspense>
