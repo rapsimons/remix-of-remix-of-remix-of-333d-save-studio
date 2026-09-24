@@ -34,11 +34,11 @@ function corners(d: Uint8ClampedArray, w: number, h: number) {
     g = 0,
     b = 0;
   for (const p of pts) {
-    r += d[p];
-    g += d[p + 1];
-    b += d[p + 2];
+    r += (d[p] ?? 0) ?? 0;
+    g += (d[p + 1] ?? 0) ?? 0;
+    b += (d[p + 2] ?? 0) ?? 0;
   }
-  return [r / 4, g / 4, b / 4];
+  return { r: r / 4, g: g / 4, b: b / 4 };
 }
 
 export function processImage(source: HTMLImageElement | HTMLCanvasElement, s: ProcessSettings): HTMLCanvasElement {
@@ -56,36 +56,36 @@ export function processImage(source: HTMLImageElement | HTMLCanvasElement, s: Pr
   const d = img.data;
 
   if (s.removeBg) {
-    const [br, bg, bb] = corners(d, w, h);
+    const { r: br, g: bg, b: bb } = corners(d, w, h);
     const tol = (s.bgThreshold / 100) * 441;
     for (let i = 0; i < d.length; i += 4) {
-      const dist = Math.hypot(d[i] - br, d[i + 1] - bg, d[i + 2] - bb);
+      const dist = Math.hypot((d[i] ?? 0) - br, (d[i + 1] ?? 0) - bg, (d[i + 2] ?? 0) - bb);
       if (dist < tol) d[i + 3] = 0;
-      else if (dist < tol * 1.25) d[i + 3] = Math.round(d[i + 3] * ((dist - tol) / (tol * 0.25)));
+      else if (dist < tol * 1.25) d[i + 3] = Math.round((d[i + 3] ?? 0) * ((dist - tol) / (tol * 0.25)));
     }
   }
 
   if (s.invert) {
     for (let i = 0; i < d.length; i += 4) {
-      d[i] = 255 - d[i];
-      d[i + 1] = 255 - d[i + 1];
-      d[i + 2] = 255 - d[i + 2];
+      d[i] = 255 - (d[i] ?? 0);
+      d[i + 1] = 255 - (d[i + 1] ?? 0);
+      d[i + 2] = 255 - (d[i + 2] ?? 0);
     }
   }
 
   if (s.colors >= 2) {
     const step = 255 / (s.colors - 1);
     for (let i = 0; i < d.length; i += 4) {
-      d[i] = Math.round(d[i] / step) * step;
-      d[i + 1] = Math.round(d[i + 1] / step) * step;
-      d[i + 2] = Math.round(d[i + 2] / step) * step;
+      d[i] = Math.round((d[i] ?? 0) / step) * step;
+      d[i + 1] = Math.round((d[i + 1] ?? 0) / step) * step;
+      d[i + 2] = Math.round((d[i + 2] ?? 0) / step) * step;
     }
   }
 
   if (s.threshold) {
     const lvl = (s.thresholdLevel / 100) * 255;
     for (let i = 0; i < d.length; i += 4) {
-      const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      const l = 0.299 * (d[i] ?? 0) + 0.587 * (d[i + 1] ?? 0) + 0.114 * (d[i + 2] ?? 0);
       const v = l > lvl ? 255 : 0;
       d[i] = d[i + 1] = d[i + 2] = v;
     }
@@ -98,9 +98,9 @@ export function processImage(source: HTMLImageElement | HTMLCanvasElement, s: Pr
       if (n < amt * 0.25) d[i + 3] = 0;
       else {
         const g = (Math.random() - 0.5) * amt * 90;
-        d[i] = Math.max(0, Math.min(255, d[i] + g));
-        d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + g));
-        d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + g));
+        d[i] = Math.max(0, Math.min(255, (d[i] ?? 0) + g));
+        d[i + 1] = Math.max(0, Math.min(255, (d[i + 1] ?? 0) + g));
+        d[i + 2] = Math.max(0, Math.min(255, (d[i + 2] ?? 0) + g));
       }
     }
   }
@@ -115,8 +115,8 @@ export function processImage(source: HTMLImageElement | HTMLCanvasElement, s: Pr
     for (let y = 0; y < h; y += cell) {
       for (let x = 0; x < w; x += cell) {
         const i = (y * w + x) * 4;
-        if (src[i + 3] < 20) continue;
-        const l = (0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2]) / 255;
+        if ((src[i + 3] ?? 0) < 20) continue;
+        const l = (0.299 * (src[i] ?? 0) + 0.587 * (src[i + 1] ?? 0) + 0.114 * (src[i + 2] ?? 0)) / 255;
         const r = ((1 - l) * cell) / 2;
         if (r > 0.25) {
           ctx.beginPath();

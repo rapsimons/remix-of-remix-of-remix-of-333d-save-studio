@@ -61,7 +61,7 @@ export async function renderLabel(
         ctx.textAlign = "left";
         chars.forEach((c, i) => {
           ctx.fillText(c, x, 0);
-          x += widths[i];
+          x += widths[i] ?? 0;
         });
       } else {
         ctx.fillText(o.text, 0, 0);
