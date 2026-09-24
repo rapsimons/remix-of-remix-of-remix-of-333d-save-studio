@@ -147,10 +147,18 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   });
 
   const off = depth / 2 + 0.004;
+  const a = design.alignment;
+  const rad = Math.PI / 180;
 
   return (
     <group ref={group}>
-      <primitive object={object} />
+      <group
+        rotation={[a.rotX * rad, a.rotY * rad, a.rotZ * rad]}
+        scale={a.scale}
+        position={[a.offsetX, a.offsetY, 0]}
+      >
+        <primitive object={object} />
+      </group>
       {frontTex && (
         <mesh position={[0, 0, off]}>
           <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
