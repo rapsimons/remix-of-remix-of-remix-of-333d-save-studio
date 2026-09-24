@@ -58,12 +58,29 @@ function normalize(scene: THREE.Object3D) {
   aligned.add(clone);
   aligned.updateMatrixWorld(true);
 
+  // roll the face upright: pick the in-plane angle with the tightest bounds
+  let bestRoll = 0;
+  let bestArea = Infinity;
+  const probe = new THREE.Vector3();
+  for (let deg = -45; deg <= 45; deg += 1) {
+    aligned.rotation.z = (deg * Math.PI) / 180;
+    aligned.updateMatrixWorld(true);
+    new THREE.Box3().setFromObject(aligned, true).getSize(probe);
+    const area = probe.x * probe.y;
+    if (area < bestArea) {
+      bestArea = area;
+      bestRoll = (deg * Math.PI) / 180;
+    }
+  }
+  aligned.rotation.z = bestRoll;
+  aligned.updateMatrixWorld(true);
+
   const box = new THREE.Box3().setFromObject(aligned, true);
   const size = new THREE.Vector3();
   const center = new THREE.Vector3();
   box.getSize(size);
   box.getCenter(center);
-  clone.position.sub(center.clone().applyQuaternion(q.clone().invert()));
+  aligned.position.sub(center);
 
   const outer = new THREE.Group();
   outer.add(aligned);
