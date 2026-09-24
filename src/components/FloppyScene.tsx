@@ -147,6 +147,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     }
     g.rotation.x = s.x;
     g.rotation.y = s.y;
+    (window as unknown as Record<string, unknown>).__spin = { x: s.x, y: s.y, flat };
     camera.lookAt(0, 0, 0);
   });
 
