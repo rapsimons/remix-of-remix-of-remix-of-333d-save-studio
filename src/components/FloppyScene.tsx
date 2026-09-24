@@ -41,6 +41,8 @@ function normalize(scene: THREE.Object3D) {
   const scale = 2 / maxFace;
   outer.scale.setScalar(scale);
 
+  if (typeof window !== "undefined")
+    (window as unknown as Record<string, unknown>).__norm = { size: size.toArray(), thin, center: center.toArray() };
   const depth = dims[thin]! * scale;
   const faceW = (thin === 0 ? size.z : size.x) * scale;
   const faceH = (thin === 1 ? size.z : size.y) * scale;
