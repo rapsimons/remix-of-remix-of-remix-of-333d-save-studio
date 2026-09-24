@@ -91,6 +91,13 @@
   --ring: oklch(0.6 0 0);
   --hairline: oklch(0.8 0 0);
   --grid: oklch(0.92 0 0);
+  --metal-low: oklch(0.58 0 0);
+  --metal-mid: oklch(0.88 0 0);
+  --metal-high: oklch(0.99 0 0);
+  --disc-cyan: oklch(0.84 0.09 210);
+  --disc-violet: oklch(0.74 0.12 305);
+  --disc-rose: oklch(0.8 0.1 15);
+  --disc-gold: oklch(0.86 0.1 88);
   --chart-1: oklch(0.3 0 0);
   --chart-2: oklch(0.45 0 0);
   --chart-3: oklch(0.6 0 0);
@@ -128,6 +135,13 @@
   --ring: oklch(0.5 0 0);
   --hairline: oklch(0.36 0 0);
   --grid: oklch(0.24 0 0);
+  --metal-low: oklch(0.32 0 0);
+  --metal-mid: oklch(0.7 0 0);
+  --metal-high: oklch(0.94 0 0);
+  --disc-cyan: oklch(0.68 0.1 210);
+  --disc-violet: oklch(0.6 0.13 305);
+  --disc-rose: oklch(0.65 0.11 15);
+  --disc-gold: oklch(0.7 0.1 88);
   --chart-1: oklch(0.9 0 0);
   --chart-2: oklch(0.75 0 0);
   --chart-3: oklch(0.6 0 0);
@@ -184,6 +198,34 @@
   font-size: 0.625rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+@utility floppy-metal {
+  background-image: linear-gradient(
+    112deg,
+    var(--metal-low) 0%,
+    var(--metal-high) 18%,
+    var(--metal-mid) 34%,
+    var(--metal-high) 48%,
+    var(--metal-low) 76%,
+    var(--metal-mid) 100%
+  );
+}
+
+@utility floppy-optical-disc {
+  background-image:
+    radial-gradient(circle, transparent 0 27%, color-mix(in oklch, var(--metal-high) 70%, transparent) 28% 29%, transparent 30%),
+    repeating-radial-gradient(circle, transparent 0 3px, color-mix(in oklch, var(--foreground) 10%, transparent) 4px 5px),
+    conic-gradient(
+      from 18deg,
+      var(--metal-mid),
+      var(--disc-cyan),
+      var(--metal-high),
+      var(--disc-violet),
+      var(--disc-rose),
+      var(--disc-gold),
+      var(--metal-mid)
+    );
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -118,12 +118,49 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     [design.color, design.roughness, design.opacity],
   );
 
+  const metalMaterial = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color("#d7dce0"),
+        metalness: 1,
+        roughness: 0.18,
+        clearcoat: 0.35,
+        clearcoatRoughness: 0.12,
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
+
+  const opticalDiscMaterial = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color("#c8cdd2"),
+        metalness: 0.92,
+        roughness: 0.08,
+        clearcoat: 1,
+        clearcoatRoughness: 0.04,
+        iridescence: 1,
+        iridescenceIOR: 1.45,
+        iridescenceThicknessRange: [180, 900],
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
+
   useEffect(() => {
     object.traverse((o) => {
       const mesh = o as THREE.Mesh;
-      if (mesh.isMesh) mesh.material = material;
+      if (!mesh.isMesh) return;
+      const name = mesh.name.toLowerCase();
+      if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
+        mesh.material = opticalDiscMaterial;
+      } else if (name.includes("shutter")) {
+        mesh.material = metalMaterial;
+      } else {
+        mesh.material = material;
+      }
     });
-  }, [object, material]);
+  }, [object, material, metalMaterial, opticalDiscMaterial]);
 
   // pointer gestures
   useEffect(() => {
@@ -239,16 +276,16 @@ export function FloppyScene(props: Props) {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
       }}
     >
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[3, 4, 5]} intensity={1.6} />
-      <directionalLight position={[-4, -2, -3]} intensity={0.6} />
+      <ambientLight intensity={0.72} />
+      <directionalLight position={[3, 4, 5]} intensity={1.8} />
+      <directionalLight position={[-4, -2, -3]} intensity={0.8} />
       <Suspense fallback={null}>
         <ErrorGuard onError={() => setFailed(true)}>
           <Floppy {...props} />
           <Environment resolution={256}>
-            <Lightformer intensity={2.4} position={[0, 4, 2]} scale={[8, 8, 1]} />
-            <Lightformer intensity={1.2} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
-            <Lightformer intensity={1.2} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />
+            <Lightformer intensity={3} position={[0, 4, 2]} scale={[8, 8, 1]} />
+            <Lightformer intensity={1.8} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
+            <Lightformer intensity={1.8} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />
           </Environment>
         </ErrorGuard>
       </Suspense>

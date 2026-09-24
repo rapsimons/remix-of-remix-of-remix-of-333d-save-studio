@@ -126,8 +126,42 @@ export function Editor2D() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="blueprint-grid absolute inset-0 border border-hairline bg-card [container-type:size]"
+        className="relative absolute inset-0 overflow-hidden border border-hairline bg-card [container-type:size]"
       >
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div
+            className="absolute inset-0 opacity-35"
+            style={{ backgroundColor: design.color }}
+          />
+          <div className="absolute inset-[2.5%] border border-foreground/25" />
+          <div className="absolute left-[7%] top-[8%] h-[84%] w-[86%] border border-foreground/15" />
+
+          <div className="floppy-optical-disc absolute left-1/2 top-[58%] aspect-square w-[43%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/30 shadow-inner">
+            <span className="absolute left-1/2 top-1/2 aspect-square w-[19%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/35 bg-card" />
+            <span className="absolute left-1/2 top-1/2 aspect-square w-[5%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/50" />
+          </div>
+
+          {side === "front" ? (
+            <>
+              <div className="floppy-metal absolute left-[19%] top-[2.5%] h-[34%] w-[62%] border border-foreground/35 shadow-sm">
+                <span className="absolute bottom-[12%] right-[16%] h-[58%] w-[24%] border border-foreground/35 bg-card/65" />
+                <span className="absolute bottom-[10%] left-[10%] h-px w-[38%] bg-foreground/25" />
+              </div>
+              <div className="absolute bottom-[4%] left-[16%] h-[27%] w-[68%] border border-foreground/20 bg-card/40" />
+            </>
+          ) : (
+            <>
+              <div className="floppy-metal absolute left-[16%] top-[2.5%] h-[31%] w-[68%] border border-foreground/35 shadow-sm">
+                <span className="absolute bottom-[12%] left-[12%] h-[55%] w-[23%] border border-foreground/35 bg-card/65" />
+              </div>
+              <div className="absolute bottom-[5%] left-[9%] h-[14%] w-[10%] border border-foreground/30 bg-card/50" />
+              <div className="absolute bottom-[5%] right-[9%] h-[14%] w-[10%] border border-foreground/30 bg-card/50" />
+            </>
+          )}
+          <div className="absolute bottom-[2.5%] left-[2.5%] h-[12%] w-[12%] border-r border-t border-foreground/20 bg-card/45" />
+        </div>
+
+        <div className="blueprint-grid pointer-events-none absolute inset-0 opacity-55" />
         {/* registration marks */}
         <span className="absolute left-2 top-2 size-3 border-l border-t border-hairline" />
         <span className="absolute right-2 top-2 size-3 border-r border-t border-hairline" />
