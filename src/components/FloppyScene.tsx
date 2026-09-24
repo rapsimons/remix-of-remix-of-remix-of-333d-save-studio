@@ -16,38 +16,61 @@ type Props = {
   interactive?: boolean | undefined;
 };
 
+function dominantNormal(root: THREE.Object3D): THREE.Vector3 {
+  // accumulate n * n^T over surface normals; the dominant eigenvector is the
+  // normal of the largest flat face (the disk face)
+  const m = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const n = new THREE.Vector3();
+  root.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const attr = mesh.geometry.getAttribute("normal");
+    if (!attr) return;
+    const nm = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
+    const step = Math.max(1, Math.floor(attr.count / 4000));
+    for (let i = 0; i < attr.count; i += step) {
+      n.fromBufferAttribute(attr as THREE.BufferAttribute, i).applyMatrix3(nm).normalize();
+      const v = [n.x, n.y, n.z];
+      for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) m[a * 3 + b]! += v[a]! * v[b]!;
+    }
+  });
+  let v = new THREE.Vector3(0.3, 0.5, 0.81).normalize();
+  for (let it = 0; it < 40; it++) {
+    const x = m[0]! * v.x + m[1]! * v.y + m[2]! * v.z;
+    const y = m[3]! * v.x + m[4]! * v.y + m[5]! * v.z;
+    const z = m[6]! * v.x + m[7]! * v.y + m[8]! * v.z;
+    const nv = new THREE.Vector3(x, y, z);
+    if (nv.lengthSq() < 1e-12) break;
+    v = nv.normalize();
+  }
+  return v;
+}
+
 function normalize(scene: THREE.Object3D) {
   const clone = scene.clone(true);
   clone.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(clone, true);
+
+  // rotate so the disk face points at the camera (+Z)
+  const normal = dominantNormal(clone);
+  const q = new THREE.Quaternion().setFromUnitVectors(normal, new THREE.Vector3(0, 0, 1));
+  const aligned = new THREE.Group();
+  aligned.quaternion.copy(q);
+  aligned.add(clone);
+  aligned.updateMatrixWorld(true);
+
+  const box = new THREE.Box3().setFromObject(aligned, true);
   const size = new THREE.Vector3();
   const center = new THREE.Vector3();
   box.getSize(size);
   box.getCenter(center);
-  clone.position.sub(center);
-
-  const wrapper = new THREE.Group();
-  wrapper.add(clone);
-
-  // thinnest axis becomes the depth (z) axis so the face points at the camera
-  const dims = [size.x, size.y, size.z];
-  const thin = dims.indexOf(Math.min(...dims));
-  if (thin === 0) wrapper.rotation.y = Math.PI / 2;
-  else if (thin === 1) wrapper.rotation.x = -Math.PI / 2;
+  clone.position.sub(center.clone().applyQuaternion(q.clone().invert()));
 
   const outer = new THREE.Group();
-  outer.add(wrapper);
-  const faceDims = dims.filter((_, i) => i !== thin);
-  const maxFace = Math.max(...faceDims);
-  const scale = 2 / maxFace;
+  outer.add(aligned);
+  const scale = 2 / Math.max(size.x, size.y);
   outer.scale.setScalar(scale);
 
-  if (typeof window !== "undefined")
-    (window as unknown as Record<string, unknown>).__norm = { size: size.toArray(), thin, center: center.toArray() };
-  const depth = dims[thin]! * scale;
-  const faceW = (thin === 0 ? size.z : size.x) * scale;
-  const faceH = (thin === 1 ? size.z : size.y) * scale;
-  return { object: outer, depth, faceW, faceH };
+  return { object: outer, depth: size.z * scale, faceW: size.x * scale, faceH: size.y * scale };
 }
 
 function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true }: Props) {
@@ -150,7 +173,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     }
     g.rotation.x = s.x;
     g.rotation.y = s.y;
-    (window as unknown as Record<string, unknown>).__spin = { x: s.x, y: s.y, flat };
     camera.lookAt(0, 0, 0);
   });
 
