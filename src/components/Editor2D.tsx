@@ -126,7 +126,7 @@ export function Editor2D() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="blueprint-grid absolute inset-0 border border-hairline bg-card"
+        className="blueprint-grid absolute inset-0 border border-hairline bg-card [container-type:size]"
       >
         {/* registration marks */}
         <span className="absolute left-2 top-2 size-3 border-l border-t border-hairline" />
