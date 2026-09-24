@@ -203,14 +203,14 @@ export function FloppyScene(props: Props) {
 
 import { Component, type ReactNode } from "react";
 class ErrorGuard extends Component<{ children: ReactNode; onError: () => void }, { hasError: boolean }> {
-  state = { hasError: false };
+  override state = { hasError: false };
   static getDerivedStateFromError() {
     return { hasError: true };
   }
-  componentDidCatch() {
+  override componentDidCatch() {
     this.props.onError();
   }
-  render() {
+  override render() {
     return this.state.hasError ? null : this.props.children;
   }
 }
