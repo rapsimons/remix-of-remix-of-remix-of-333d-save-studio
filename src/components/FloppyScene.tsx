@@ -18,7 +18,8 @@ type Props = {
 
 function normalize(scene: THREE.Object3D) {
   const clone = scene.clone(true);
-  const box = new THREE.Box3().setFromObject(clone);
+  clone.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(clone, true);
   const size = new THREE.Vector3();
   const center = new THREE.Vector3();
   box.getSize(size);
