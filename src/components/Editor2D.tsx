@@ -126,7 +126,7 @@ export function Editor2D() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="relative absolute inset-0 overflow-hidden border border-hairline bg-card [container-type:size]"
+        className="absolute inset-0 overflow-hidden border border-hairline bg-card [container-type:size]"
       >
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div
