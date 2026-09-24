@@ -296,14 +296,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       >
         <primitive object={object} />
       </group>
-      <mesh position={[0, discY, depth / 2 + 0.002]} material={opticalDiscOverlayMaterial}>
-        <ringGeometry args={[discRadius * 0.13, discRadius, 96]} />
-      </mesh>
-      <mesh
-        position={[0, discY, -(depth / 2 + 0.002)]}
-        rotation={[0, Math.PI, 0]}
-        material={opticalDiscOverlayMaterial}
-      >
+      <mesh position={[0, discY, 0]} material={opticalDiscOverlayMaterial}>
         <ringGeometry args={[discRadius * 0.13, discRadius, 96]} />
       </mesh>
       {frontTex && (
