@@ -34,9 +34,9 @@ function corners(d: Uint8ClampedArray, w: number, h: number) {
     g = 0,
     b = 0;
   for (const p of pts) {
-    r += (d[p] ?? 0) ?? 0;
-    g += (d[p + 1] ?? 0) ?? 0;
-    b += (d[p + 2] ?? 0) ?? 0;
+    r += d[p] ?? 0;
+    g += d[p + 1] ?? 0;
+    b += d[p + 2] ?? 0;
   }
   return { r: r / 4, g: g / 4, b: b / 4 };
 }
