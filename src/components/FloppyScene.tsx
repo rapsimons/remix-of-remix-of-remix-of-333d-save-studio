@@ -129,8 +129,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     if (flat) {
       s.vx = 0;
       s.vy = 0;
+      const ty = Math.round(s.y / (Math.PI * 2)) * Math.PI * 2;
       s.x += (0 - s.x) * Math.min(1, dt * 6);
-      s.y += (0 - s.y) * Math.min(1, dt * 6);
+      s.y += (ty - s.y) * Math.min(1, dt * 6);
       camera.position.lerp(new THREE.Vector3(0, 0, 3.4), Math.min(1, dt * 4));
     } else {
       s.x += s.vx;
