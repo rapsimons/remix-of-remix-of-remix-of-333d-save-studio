@@ -123,6 +123,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
   useFrame((_, rawDelta) => {
     const dt = Math.min(rawDelta, 0.05);
+    const cam = camera as THREE.PerspectiveCamera;
+    const vFov = (cam.fov * Math.PI) / 180;
+    const fit = Math.max(faceH / (2 * Math.tan(vFov / 2)), faceW / (2 * Math.tan(vFov / 2) * cam.aspect));
     const g = group.current;
     if (!g) return;
     const s = spin.current;
@@ -132,7 +135,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const ty = Math.round(s.y / (Math.PI * 2)) * Math.PI * 2;
       s.x += (0 - s.x) * Math.min(1, dt * 6);
       s.y += (ty - s.y) * Math.min(1, dt * 6);
-      camera.position.lerp(new THREE.Vector3(0, 0, 3.4), Math.min(1, dt * 4));
+      camera.position.lerp(new THREE.Vector3(0, 0, fit * 1.15), Math.min(1, dt * 4));
     } else {
       s.x += s.vx;
       s.y += s.vy;
@@ -140,7 +143,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       s.vx *= damp;
       s.vy *= damp;
       if (design.autoRotate && Math.abs(s.vy) < 0.0008) s.y += design.autoRotateSpeed * dt;
-      camera.position.lerp(new THREE.Vector3(0, 0, 4.2), Math.min(1, dt * 3));
+      camera.position.lerp(new THREE.Vector3(0, 0, fit * 1.5), Math.min(1, dt * 3));
     }
     g.rotation.x = s.x;
     g.rotation.y = s.y;
