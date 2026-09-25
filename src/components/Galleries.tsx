@@ -60,6 +60,12 @@ export function StickerGallery({
                   rot: 0,
                   opacity: 1,
                   src: it.src,
+                  stickerKind: kind,
+                  hue: 0,
+                  tintMode: "original",
+                  tintColor: "#d9b86c",
+                  gradientColor: "#e7e0cc",
+                  gradientAngle: 90,
                 });
                 onClose();
               }}
