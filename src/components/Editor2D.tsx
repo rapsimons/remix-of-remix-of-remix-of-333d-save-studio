@@ -185,7 +185,30 @@ export function Editor2D() {
               }}
             >
               {o.type === "image" ? (
-                <img src={o.src} alt="" draggable={false} className="pointer-events-none block w-full" />
+                <div className="relative w-full">
+                  <img
+                    src={o.src}
+                    alt=""
+                    draggable={false}
+                    className="pointer-events-none block w-full"
+                    style={{ filter: o.stickerKind === "paper" ? `hue-rotate(${o.hue ?? 0}deg)` : undefined }}
+                  />
+                  {o.stickerKind === "paper" && o.tintMode && o.tintMode !== "original" && (
+                    <span
+                      className="pointer-events-none absolute inset-0 opacity-80 mix-blend-color"
+                      style={{
+                        background:
+                          o.tintMode === "gradient"
+                            ? `linear-gradient(${o.gradientAngle ?? 90}deg, ${o.tintColor ?? "#d9b86c"}, ${o.gradientColor ?? "#e7e0cc"})`
+                            : o.tintColor ?? "#d9b86c",
+                        WebkitMaskImage: `url(${o.src})`,
+                        maskImage: `url(${o.src})`,
+                        WebkitMaskSize: "100% 100%",
+                        maskSize: "100% 100%",
+                      }}
+                    />
+                  )}
+                </div>
               ) : (
                 <span
                   className="pointer-events-none block whitespace-pre"

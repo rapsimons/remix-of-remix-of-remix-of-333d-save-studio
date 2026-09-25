@@ -20,6 +20,57 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
 /** Aspect ratio of the label face: 3.5" floppy is 90 x 94 mm */
 export const LABEL_ASPECT = 90 / 94;
 
+function drawStyledImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  o: LabelObject,
+  width: number,
+  height: number,
+) {
+  const x = -width / 2;
+  const y = -height / 2;
+  if (o.stickerKind !== "paper") {
+    ctx.drawImage(img, x, y, width, height);
+    return;
+  }
+
+  const layer = document.createElement("canvas");
+  layer.width = Math.max(1, Math.round(width));
+  layer.height = Math.max(1, Math.round(height));
+  const layerCtx = layer.getContext("2d");
+  if (!layerCtx) return;
+  layerCtx.filter = `hue-rotate(${o.hue ?? 0}deg)`;
+  layerCtx.drawImage(img, 0, 0, layer.width, layer.height);
+  layerCtx.filter = "none";
+
+  if (o.tintMode && o.tintMode !== "original") {
+    layerCtx.globalCompositeOperation = "source-atop";
+    if (o.tintMode === "gradient") {
+      const angle = ((o.gradientAngle ?? 90) * Math.PI) / 180;
+      const cx = layer.width / 2;
+      const cy = layer.height / 2;
+      const radius = Math.abs(layer.width * Math.cos(angle)) / 2 + Math.abs(layer.height * Math.sin(angle)) / 2;
+      const gradient = layerCtx.createLinearGradient(
+        cx - Math.cos(angle) * radius,
+        cy - Math.sin(angle) * radius,
+        cx + Math.cos(angle) * radius,
+        cy + Math.sin(angle) * radius,
+      );
+      gradient.addColorStop(0, o.tintColor ?? "#d9b86c");
+      gradient.addColorStop(1, o.gradientColor ?? "#e7e0cc");
+      layerCtx.fillStyle = gradient;
+    } else {
+      layerCtx.fillStyle = o.tintColor ?? "#d9b86c";
+    }
+    layerCtx.globalAlpha = 0.82;
+    layerCtx.fillRect(0, 0, layer.width, layer.height);
+    layerCtx.globalAlpha = 0.28;
+    layerCtx.globalCompositeOperation = "multiply";
+    layerCtx.drawImage(img, 0, 0, layer.width, layer.height);
+  }
+  ctx.drawImage(layer, x, y, width, height);
+}
+
 export async function renderLabel(
   objects: LabelObject[],
   size = 1024,
@@ -42,7 +93,7 @@ export async function renderLabel(
         const img = await loadImage(o.src);
         const iw = o.w * w;
         const ih = iw / (o.aspect || img.width / img.height || 1);
-        ctx.drawImage(img, -iw / 2, -ih / 2, iw, ih);
+        drawStyledImage(ctx, img, o, iw, ih);
       } catch {
         /* skip */
       }

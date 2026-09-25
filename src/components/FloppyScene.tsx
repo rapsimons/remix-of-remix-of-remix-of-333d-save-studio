@@ -90,39 +90,6 @@ function normalize(scene: THREE.Object3D) {
   return { object: outer, depth: size.z * scale, faceW: size.x * scale, faceH: size.y * scale };
 }
 
-function createOpticalDiscTexture() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  const center = canvas.width / 2;
-  const gradient = ctx.createConicGradient(0.2, center, center);
-  gradient.addColorStop(0, "#d7dde1");
-  gradient.addColorStop(0.12, "#8ee8ef");
-  gradient.addColorStop(0.25, "#f5f7f8");
-  gradient.addColorStop(0.39, "#c59bea");
-  gradient.addColorStop(0.53, "#f2a7b7");
-  gradient.addColorStop(0.67, "#f0de86");
-  gradient.addColorStop(0.82, "#91dce8");
-  gradient.addColorStop(1, "#d7dde1");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.globalAlpha = 0.22;
-  ctx.strokeStyle = "#4e555b";
-  ctx.lineWidth = 1;
-  for (let radius = 48; radius < 252; radius += 4) {
-    ctx.beginPath();
-    ctx.arc(center, center, radius, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  return texture;
-}
-
 function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true }: Props) {
   const gltf = useGLTF(modelUrl || DEFAULT_MODEL_URL);
   const group = useRef<THREE.Group>(null);
@@ -178,24 +145,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         side: THREE.DoubleSide,
       }),
     [],
-  );
-
-  const opticalDiscTexture = useMemo(() => createOpticalDiscTexture(), []);
-  const opticalDiscOverlayMaterial = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        map: opticalDiscTexture,
-        color: new THREE.Color("#ffffff"),
-        metalness: 0.82,
-        roughness: 0.12,
-        clearcoat: 1,
-        clearcoatRoughness: 0.03,
-        iridescence: 1,
-        iridescenceIOR: 1.5,
-        iridescenceThicknessRange: [220, 780],
-        side: THREE.DoubleSide,
-      }),
-    [opticalDiscTexture],
   );
 
   useEffect(() => {
@@ -281,9 +230,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     camera.lookAt(0, 0, 0);
   });
 
-  const off = depth / 2 + 0.004;
-  const discRadius = Math.min(faceW, faceH) * 0.39;
-  const discY = -faceH * 0.08;
+  // The shell face sits slightly inside the shutter's outermost depth.
+  // Keep artwork just above that surface instead of at the model's full bounds.
+  const off = Math.max(0.001, depth / 2 - depth * 0.16);
   const a = design.alignment;
   const rad = Math.PI / 180;
 
@@ -296,9 +245,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       >
         <primitive object={object} />
       </group>
-      <mesh position={[0, discY, 0]} material={opticalDiscOverlayMaterial}>
-        <ringGeometry args={[discRadius * 0.13, discRadius, 96]} />
-      </mesh>
       {frontTex && (
         <mesh position={[0, 0, off]}>
           <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />

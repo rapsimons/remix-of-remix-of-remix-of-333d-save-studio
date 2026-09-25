@@ -22,6 +22,12 @@ export type LabelObject = {
   tracking?: number;
   // image
   src?: string;
+  stickerKind?: "holo" | "paper";
+  hue?: number;
+  tintMode?: "original" | "solid" | "gradient";
+  tintColor?: string;
+  gradientColor?: string;
+  gradientAngle?: number;
 };
 
 export type MenuLink = {

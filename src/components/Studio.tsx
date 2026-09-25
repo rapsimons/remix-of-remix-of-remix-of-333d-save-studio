@@ -205,6 +205,56 @@ export function Studio() {
                     </Field>
                   </>
                 )}
+                {selected.type === "image" && selected.stickerKind === "paper" && (
+                  <div className="space-y-2 border-t border-hairline pt-2">
+                    <Slider
+                      label="Hue"
+                      min={-180}
+                      max={180}
+                      value={selected.hue ?? 0}
+                      onChange={(v) => store.updateObject(selected.id, { hue: v }, false)}
+                    />
+                    <Field label="Paper color">
+                      <input
+                        type="color"
+                        className="h-8 w-full border border-hairline bg-background"
+                        value={selected.tintColor ?? "#d9b86c"}
+                        onChange={(e) =>
+                          store.updateObject(selected.id, { tintColor: e.target.value, tintMode: "solid" }, false)
+                        }
+                      />
+                    </Field>
+                    <div className="grid grid-cols-3 gap-1" aria-label="Paper color style">
+                      {(["original", "solid", "gradient"] as const).map((style) => (
+                        <Btn
+                          key={style}
+                          label={style}
+                          active={(selected.tintMode ?? "original") === style}
+                          onClick={() => store.updateObject(selected.id, { tintMode: style })}
+                        />
+                      ))}
+                    </div>
+                    {(selected.tintMode ?? "original") === "gradient" && (
+                      <>
+                        <Field label="Second color">
+                          <input
+                            type="color"
+                            className="h-8 w-full border border-hairline bg-background"
+                            value={selected.gradientColor ?? "#e7e0cc"}
+                            onChange={(e) => store.updateObject(selected.id, { gradientColor: e.target.value }, false)}
+                          />
+                        </Field>
+                        <Slider
+                          label="Gradient angle"
+                          min={0}
+                          max={360}
+                          value={selected.gradientAngle ?? 90}
+                          onChange={(v) => store.updateObject(selected.id, { gradientAngle: v }, false)}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
                 <Slider
                   label="Rotation"
                   min={-180}
