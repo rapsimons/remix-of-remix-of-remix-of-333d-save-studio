@@ -87,7 +87,20 @@ function normalize(scene: THREE.Object3D) {
   const scale = 2 / Math.max(size.x, size.y);
   outer.scale.setScalar(scale);
 
-  return { object: outer, depth: size.z * scale, faceW: size.x * scale, faceH: size.y * scale };
+  outer.updateMatrixWorld(true);
+  let frontSurface = (size.z * scale) / 2;
+  let backSurface = -(size.z * scale) / 2;
+  outer.traverse((node) => {
+    const mesh = node as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const name = mesh.name.toLowerCase();
+    if (!name.includes("floppy") || name.includes("shutter") || name.includes("magnetic")) return;
+    const bodyBox = new THREE.Box3().setFromObject(mesh, true);
+    frontSurface = bodyBox.max.z;
+    backSurface = bodyBox.min.z;
+  });
+
+  return { object: outer, frontSurface, backSurface, faceW: size.x * scale, faceH: size.y * scale };
 }
 
 function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true }: Props) {
@@ -96,7 +109,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   const spin = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
   const { gl, camera } = useThree();
 
-  const { object, depth, faceW, faceH } = useMemo(() => normalize(gltf.scene), [gltf.scene]);
+  const { object, frontSurface, backSurface, faceW, faceH } = useMemo(() => normalize(gltf.scene), [gltf.scene]);
 
   const frontTex = useLabelTexture(design.front);
   const backTex = useLabelTexture(design.back);
@@ -230,9 +243,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     camera.lookAt(0, 0, 0);
   });
 
-  // The shell face sits slightly inside the shutter's outermost depth.
-  // Keep artwork just above that surface instead of at the model's full bounds.
-  const off = Math.max(0.001, depth / 2 - depth * 0.16);
+  const surfaceGap = 0.001;
   const a = design.alignment;
   const rad = Math.PI / 180;
 
@@ -246,13 +257,13 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         <primitive object={object} />
       </group>
       {frontTex && (
-        <mesh position={[0, 0, off]}>
+        <mesh position={[0, 0, frontSurface + surfaceGap]}>
           <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
           <meshStandardMaterial map={frontTex} transparent roughness={0.45} />
         </mesh>
       )}
       {backTex && (
-        <mesh position={[0, 0, -off]} rotation={[0, Math.PI, 0]}>
+        <mesh position={[0, 0, backSurface - surfaceGap]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
           <meshStandardMaterial map={backTex} transparent roughness={0.45} />
         </mesh>
