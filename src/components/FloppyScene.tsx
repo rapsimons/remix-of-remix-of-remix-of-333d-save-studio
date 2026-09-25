@@ -90,12 +90,23 @@ function normalize(scene: THREE.Object3D) {
   outer.updateMatrixWorld(true);
   let frontSurface = (size.z * scale) / 2;
   let backSurface = -(size.z * scale) / 2;
+  let largestBodyFaceArea = 0;
   outer.traverse((node) => {
     const mesh = node as THREE.Mesh;
     if (!mesh.isMesh) return;
     const name = mesh.name.toLowerCase();
-    if (!name.includes("floppy") || name.includes("shutter") || name.includes("magnetic")) return;
+    if (
+      !name.includes("floppy") ||
+      name.includes("shutter") ||
+      name.includes("magnetic") ||
+      name.includes("slider")
+    )
+      return;
     const bodyBox = new THREE.Box3().setFromObject(mesh, true);
+    const bodySize = bodyBox.getSize(new THREE.Vector3());
+    const faceArea = bodySize.x * bodySize.y;
+    if (faceArea <= largestBodyFaceArea) return;
+    largestBodyFaceArea = faceArea;
     frontSurface = bodyBox.max.z;
     backSurface = bodyBox.min.z;
   });
@@ -243,7 +254,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     camera.lookAt(0, 0, 0);
   });
 
-  const surfaceGap = 0.001;
+  const surfaceGap = 0.0001;
   const a = design.alignment;
   const rad = Math.PI / 180;
 
@@ -255,19 +266,33 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         position={[a.offsetX, a.offsetY, 0]}
       >
         <primitive object={object} />
+        {frontTex && (
+          <mesh position={[0, 0, frontSurface + surfaceGap]}>
+            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <meshStandardMaterial
+              map={frontTex}
+              transparent
+              roughness={0.45}
+              depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={-1}
+            />
+          </mesh>
+        )}
+        {backTex && (
+          <mesh position={[0, 0, backSurface - surfaceGap]} rotation={[0, Math.PI, 0]}>
+            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <meshStandardMaterial
+              map={backTex}
+              transparent
+              roughness={0.45}
+              depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={-1}
+            />
+          </mesh>
+        )}
       </group>
-      {frontTex && (
-        <mesh position={[0, 0, frontSurface + surfaceGap]}>
-          <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
-          <meshStandardMaterial map={frontTex} transparent roughness={0.45} />
-        </mesh>
-      )}
-      {backTex && (
-        <mesh position={[0, 0, backSurface - surfaceGap]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
-          <meshStandardMaterial map={backTex} transparent roughness={0.45} />
-        </mesh>
-      )}
     </group>
   );
 }
