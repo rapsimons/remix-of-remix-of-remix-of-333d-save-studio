@@ -306,7 +306,7 @@ export function Studio() {
                         icon="delete"
                         label="Clear image"
                         disabled={!selected.labelImage}
-                        onClick={() => store.updateObject(selected.id, { labelImage: undefined })}
+                        onClick={() => store.updateObject(selected.id, { labelImage: "" })}
                       />
                     </div>
                     {selected.labelImage && (
