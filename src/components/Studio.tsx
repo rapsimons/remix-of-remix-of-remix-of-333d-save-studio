@@ -341,6 +341,64 @@ export function Studio() {
                   })
                 }
               />
+              <section className="space-y-2 border border-hairline p-3">
+                <span className="label-caps text-muted-foreground">Disc shell</span>
+                <Field label="Color">
+                  <input
+                    type="color"
+                    className="h-8 w-full border border-hairline bg-background"
+                    value={design.color}
+                    onChange={(e) =>
+                      store.patch((d) => {
+                        d.color = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
+                <div className="grid grid-cols-6 gap-1">
+                  {["#2f6fd0", "#d94f7a", "#3fbf8f", "#e8b53c", "#8a5cd6", "#e6e6e6"].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-label={`Shell color ${c}`}
+                      onClick={() =>
+                        store.patch((d) => {
+                          d.color = c;
+                        })
+                      }
+                      className={cn(
+                        "h-7 border border-hairline",
+                        design.color.toLowerCase() === c && "ring-1 ring-foreground",
+                      )}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+                <Slider
+                  label="Transparency"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={design.opacity}
+                  onChange={(v) =>
+                    store.patch((d) => {
+                      d.opacity = v;
+                    })
+                  }
+                />
+                <Slider
+                  label="Frost"
+                  min={0}
+                  max={0.6}
+                  step={0.01}
+                  value={design.roughness}
+                  onChange={(v) =>
+                    store.patch((d) => {
+                      d.roughness = v;
+                    })
+                  }
+                />
+              </section>
             </div>
           </div>
         )}
