@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Btn, Field, Modal, Slider, inputClass } from "./ui/kit";
 import { Icon } from "./ui/Icon";
 import { Editor2D } from "./Editor2D";
@@ -24,6 +24,7 @@ export function Studio() {
   const [lockX, setLockX] = useState(false);
   const [lockY, setLockY] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const stampRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void store.init();
@@ -300,7 +301,7 @@ export function Studio() {
                       </>
                     ) : null}
                     <div className="grid grid-cols-2 gap-1">
-                      <Btn icon="image" label="Add image" onClick={() => setStampFor(selected.id)} />
+                      <Btn icon="image" label="Add image" onClick={() => stampRef.current?.click()} />
                       <Btn
                         icon="delete"
                         label="Clear image"
