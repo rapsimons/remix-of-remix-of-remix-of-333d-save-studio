@@ -112,11 +112,25 @@ function normalize(scene: THREE.Object3D) {
   outer.scale.setScalar(scale);
 
   outer.updateMatrixWorld(true);
-  // use the shell's overall bounds for the label surfaces — the shell mesh
-  // names contain "floppy", so filtering them out measured the inner magnetic
-  // disk instead and left labels floating off the body
-  const frontSurface = (size.z * scale) / 2;
-  const backSurface = -(size.z * scale) / 2;
+  // measure the shell body (the "floppy" mesh), not the overall bounds — the
+  // metal shutter protrudes past the shell face, so overall bounds would park
+  // labels at shutter depth, floating off the body
+  let frontSurface = (size.z * scale) / 2;
+  let backSurface = -(size.z * scale) / 2;
+  let shellArea = 0;
+  outer.traverse((node) => {
+    const mesh = node as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const name = mesh.name.toLowerCase();
+    if (!name.includes("floppy")) return;
+    const mb = new THREE.Box3().setFromObject(mesh, true);
+    const ms = mb.getSize(new THREE.Vector3());
+    const area = ms.x * ms.y;
+    if (area <= shellArea) return;
+    shellArea = area;
+    frontSurface = mb.max.z;
+    backSurface = mb.min.z;
+  });
 
   return { object: outer, frontSurface, backSurface, faceW: size.x * scale, faceH: size.y * scale };
 }
