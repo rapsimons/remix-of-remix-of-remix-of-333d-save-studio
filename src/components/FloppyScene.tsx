@@ -112,28 +112,11 @@ function normalize(scene: THREE.Object3D) {
   outer.scale.setScalar(scale);
 
   outer.updateMatrixWorld(true);
-  let frontSurface = (size.z * scale) / 2;
-  let backSurface = -(size.z * scale) / 2;
-  let largestBodyFaceArea = 0;
-  outer.traverse((node) => {
-    const mesh = node as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    const name = mesh.name.toLowerCase();
-    if (
-      !name.includes("floppy") ||
-      name.includes("shutter") ||
-      name.includes("magnetic") ||
-      name.includes("slider")
-    )
-      return;
-    const bodyBox = new THREE.Box3().setFromObject(mesh, true);
-    const bodySize = bodyBox.getSize(new THREE.Vector3());
-    const faceArea = bodySize.x * bodySize.y;
-    if (faceArea <= largestBodyFaceArea) return;
-    largestBodyFaceArea = faceArea;
-    frontSurface = bodyBox.max.z;
-    backSurface = bodyBox.min.z;
-  });
+  // use the shell's overall bounds for the label surfaces — the shell mesh
+  // names contain "floppy", so filtering them out measured the inner magnetic
+  // disk instead and left labels floating off the body
+  const frontSurface = (size.z * scale) / 2;
+  const backSurface = -(size.z * scale) / 2;
 
   return { object: outer, frontSurface, backSurface, faceW: size.x * scale, faceH: size.y * scale };
 }
@@ -278,7 +261,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     camera.lookAt(0, 0, 0);
   });
 
-  const surfaceGap = 0.0001;
+  const surfaceGap = 0.0005;
   const a = design.alignment;
   const rad = Math.PI / 180;
 
