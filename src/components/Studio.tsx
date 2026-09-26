@@ -255,6 +255,71 @@ export function Studio() {
                     )}
                   </div>
                 )}
+                {selected.type === "image" && (
+                  <div className="space-y-2 border-t border-hairline pt-2">
+                    <Field label="Sticker text">
+                      <input
+                        className={inputClass}
+                        placeholder="Type on the sticker"
+                        value={selected.labelText ?? ""}
+                        onChange={(e) => store.updateObject(selected.id, { labelText: e.target.value })}
+                      />
+                    </Field>
+                    {selected.labelText ? (
+                      <>
+                        <Field label="Text font">
+                          <select
+                            className={inputClass}
+                            value={selected.labelFontFamily ?? ""}
+                            onChange={(e) => store.updateObject(selected.id, { labelFontFamily: e.target.value })}
+                          >
+                            <option value="">Default</option>
+                            {store.fonts.map((f) => (
+                              <option key={f.id} value={f.family}>
+                                {f.name}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Slider
+                          label="Text size"
+                          min={0.06}
+                          max={0.5}
+                          step={0.01}
+                          value={selected.labelSize ?? 0.22}
+                          onChange={(v) => store.updateObject(selected.id, { labelSize: v }, false)}
+                        />
+                        <Field label="Text color">
+                          <input
+                            type="color"
+                            className="h-8 w-full border border-hairline bg-background"
+                            value={selected.labelColor ?? "#1a1a1a"}
+                            onChange={(e) => store.updateObject(selected.id, { labelColor: e.target.value }, false)}
+                          />
+                        </Field>
+                      </>
+                    ) : null}
+                    <div className="grid grid-cols-2 gap-1">
+                      <Btn icon="image" label="Add image" onClick={() => setStampFor(selected.id)} />
+                      <Btn
+                        icon="delete"
+                        label="Clear image"
+                        disabled={!selected.labelImage}
+                        onClick={() => store.updateObject(selected.id, { labelImage: undefined })}
+                      />
+                    </div>
+                    {selected.labelImage && (
+                      <Slider
+                        label="Image size"
+                        min={0.1}
+                        max={1}
+                        step={0.05}
+                        value={selected.labelImageScale ?? 0.5}
+                        onChange={(v) => store.updateObject(selected.id, { labelImageScale: v }, false)}
+                      />
+                    )}
+                  </div>
+                )}
                 <Slider
                   label="Rotation"
                   min={-180}
