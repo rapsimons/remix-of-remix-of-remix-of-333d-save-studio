@@ -601,6 +601,21 @@ export function Studio() {
         </div>
       </Modal>
 
+      <input
+        ref={stampRef}
+        type="file"
+        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          const id = selectedId;
+          e.target.value = "";
+          if (!file || !id) return;
+          const reader = new FileReader();
+          reader.onload = () => store.updateObject(id, { labelImage: String(reader.result) });
+          reader.readAsDataURL(file);
+        }}
+      />
     </div>
   );
 }
