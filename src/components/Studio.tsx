@@ -295,45 +295,6 @@ export function Studio() {
               </ul>
             </section>
 
-            <section className="space-y-2 border border-hairline p-3">
-              <span className="label-caps text-muted-foreground">Plastic</span>
-              <Field label="Color">
-                <input
-                  type="color"
-                  className="h-8 w-full border border-hairline bg-background"
-                  value={design.color}
-                  onChange={(e) =>
-                    store.patch((d) => {
-                      d.color = e.target.value;
-                    })
-                  }
-                />
-              </Field>
-              <Slider
-                label="Opacity"
-                min={0.1}
-                max={1}
-                step={0.05}
-                value={design.opacity}
-                onChange={(v) =>
-                  store.patch((d) => {
-                    d.opacity = v;
-                  })
-                }
-              />
-              <Slider
-                label="Roughness"
-                min={0}
-                max={0.6}
-                step={0.01}
-                value={design.roughness}
-                onChange={(v) =>
-                  store.patch((d) => {
-                    d.roughness = v;
-                  })
-                }
-              />
-            </section>
           </div>
         )}
 
