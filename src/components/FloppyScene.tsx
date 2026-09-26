@@ -32,7 +32,6 @@ function dominantNormal(root: THREE.Object3D): THREE.Vector3 {
     const geo = mesh.geometry;
     const pos = geo.getAttribute("position");
     if (!pos) return;
-    const nm = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
     const index = geo.getIndex();
     const triCount = index ? index.count / 3 : pos.count / 3;
     const step = Math.max(1, Math.floor(triCount / 6000));
@@ -45,10 +44,11 @@ function dominantNormal(root: THREE.Object3D): THREE.Vector3 {
       c.fromBufferAttribute(pos as THREE.BufferAttribute, i2).applyMatrix4(mesh.matrixWorld);
       ab.subVectors(b, a);
       ac.subVectors(c, a);
+      // cross of world-space edges is already a world-space normal
       n.crossVectors(ab, ac);
       const area2 = n.length();
       if (area2 < 1e-10) continue;
-      n.divideScalar(area2).applyMatrix3(nm).normalize();
+      n.divideScalar(area2);
       const key = `${Math.round(n.x * 20)},${Math.round(n.y * 20)},${Math.round(n.z * 20)}`;
       const bin = bins.get(key);
       if (bin) {
