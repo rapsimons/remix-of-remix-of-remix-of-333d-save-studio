@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Btn, Field, Modal, Slider, inputClass } from "./ui/kit";
 import { Icon } from "./ui/Icon";
 import { Editor2D } from "./Editor2D";
@@ -24,6 +24,7 @@ export function Studio() {
   const [lockX, setLockX] = useState(false);
   const [lockY, setLockY] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const stampRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void store.init();
@@ -255,6 +256,71 @@ export function Studio() {
                     )}
                   </div>
                 )}
+                {selected.type === "image" && (
+                  <div className="space-y-2 border-t border-hairline pt-2">
+                    <Field label="Sticker text">
+                      <input
+                        className={inputClass}
+                        placeholder="Type on the sticker"
+                        value={selected.labelText ?? ""}
+                        onChange={(e) => store.updateObject(selected.id, { labelText: e.target.value })}
+                      />
+                    </Field>
+                    {selected.labelText ? (
+                      <>
+                        <Field label="Text font">
+                          <select
+                            className={inputClass}
+                            value={selected.labelFontFamily ?? ""}
+                            onChange={(e) => store.updateObject(selected.id, { labelFontFamily: e.target.value })}
+                          >
+                            <option value="">Default</option>
+                            {store.fonts.map((f) => (
+                              <option key={f.id} value={f.family}>
+                                {f.name}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Slider
+                          label="Text size"
+                          min={0.06}
+                          max={0.5}
+                          step={0.01}
+                          value={selected.labelSize ?? 0.22}
+                          onChange={(v) => store.updateObject(selected.id, { labelSize: v }, false)}
+                        />
+                        <Field label="Text color">
+                          <input
+                            type="color"
+                            className="h-8 w-full border border-hairline bg-background"
+                            value={selected.labelColor ?? "#1a1a1a"}
+                            onChange={(e) => store.updateObject(selected.id, { labelColor: e.target.value }, false)}
+                          />
+                        </Field>
+                      </>
+                    ) : null}
+                    <div className="grid grid-cols-2 gap-1">
+                      <Btn icon="image" label="Add image" onClick={() => stampRef.current?.click()} />
+                      <Btn
+                        icon="delete"
+                        label="Clear image"
+                        disabled={!selected.labelImage}
+                        onClick={() => store.updateObject(selected.id, { labelImage: "" })}
+                      />
+                    </div>
+                    {selected.labelImage && (
+                      <Slider
+                        label="Image size"
+                        min={0.1}
+                        max={1}
+                        step={0.05}
+                        value={selected.labelImageScale ?? 0.5}
+                        onChange={(v) => store.updateObject(selected.id, { labelImageScale: v }, false)}
+                      />
+                    )}
+                  </div>
+                )}
                 <Slider
                   label="Rotation"
                   min={-180}
@@ -295,45 +361,6 @@ export function Studio() {
               </ul>
             </section>
 
-            <section className="space-y-2 border border-hairline p-3">
-              <span className="label-caps text-muted-foreground">Plastic</span>
-              <Field label="Color">
-                <input
-                  type="color"
-                  className="h-8 w-full border border-hairline bg-background"
-                  value={design.color}
-                  onChange={(e) =>
-                    store.patch((d) => {
-                      d.color = e.target.value;
-                    })
-                  }
-                />
-              </Field>
-              <Slider
-                label="Opacity"
-                min={0.1}
-                max={1}
-                step={0.05}
-                value={design.opacity}
-                onChange={(v) =>
-                  store.patch((d) => {
-                    d.opacity = v;
-                  })
-                }
-              />
-              <Slider
-                label="Roughness"
-                min={0}
-                max={0.6}
-                step={0.01}
-                value={design.roughness}
-                onChange={(v) =>
-                  store.patch((d) => {
-                    d.roughness = v;
-                  })
-                }
-              />
-            </section>
           </div>
         )}
 
@@ -380,6 +407,64 @@ export function Studio() {
                   })
                 }
               />
+              <section className="space-y-2 border border-hairline p-3">
+                <span className="label-caps text-muted-foreground">Disc shell</span>
+                <Field label="Color">
+                  <input
+                    type="color"
+                    className="h-8 w-full border border-hairline bg-background"
+                    value={design.color}
+                    onChange={(e) =>
+                      store.patch((d) => {
+                        d.color = e.target.value;
+                      })
+                    }
+                  />
+                </Field>
+                <div className="grid grid-cols-6 gap-1">
+                  {["#2f6fd0", "#d94f7a", "#3fbf8f", "#e8b53c", "#8a5cd6", "#e6e6e6"].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-label={`Shell color ${c}`}
+                      onClick={() =>
+                        store.patch((d) => {
+                          d.color = c;
+                        })
+                      }
+                      className={cn(
+                        "h-7 border border-hairline",
+                        design.color.toLowerCase() === c && "ring-1 ring-foreground",
+                      )}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+                <Slider
+                  label="Transparency"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={design.opacity}
+                  onChange={(v) =>
+                    store.patch((d) => {
+                      d.opacity = v;
+                    })
+                  }
+                />
+                <Slider
+                  label="Frost"
+                  min={0}
+                  max={0.6}
+                  step={0.01}
+                  value={design.roughness}
+                  onChange={(v) =>
+                    store.patch((d) => {
+                      d.roughness = v;
+                    })
+                  }
+                />
+              </section>
             </div>
           </div>
         )}
@@ -516,6 +601,21 @@ export function Studio() {
         </div>
       </Modal>
 
+      <input
+        ref={stampRef}
+        type="file"
+        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          const id = selectedId;
+          e.target.value = "";
+          if (!file || !id) return;
+          const reader = new FileReader();
+          reader.onload = () => store.updateObject(id, { labelImage: String(reader.result) });
+          reader.readAsDataURL(file);
+        }}
+      />
     </div>
   );
 }

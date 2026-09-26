@@ -28,6 +28,14 @@ export type LabelObject = {
   tintColor?: string;
   gradientColor?: string;
   gradientAngle?: number;
+  /** text printed on top of a sticker */
+  labelText?: string;
+  labelColor?: string;
+  labelSize?: number;
+  labelFontFamily?: string;
+  /** image stamped on top of a sticker */
+  labelImage?: string;
+  labelImageScale?: number;
 };
 
 export type MenuLink = {

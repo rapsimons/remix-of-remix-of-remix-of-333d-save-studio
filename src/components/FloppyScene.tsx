@@ -143,8 +143,10 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
   const { object, frontSurface, backSurface, faceW, faceH } = useMemo(() => normalize(gltf.scene), [gltf.scene]);
 
-  const frontTex = useLabelTexture(design.front);
-  const backTex = useLabelTexture(design.back);
+  const frontTex = useLabelTexture(design.front, 1024, "base");
+  const backTex = useLabelTexture(design.back, 1024, "base");
+  const frontHoloTex = useLabelTexture(design.front, 1024, "holo");
+  const backHoloTex = useLabelTexture(design.back, 1024, "holo");
 
   const material = useMemo(
     () =>
@@ -300,6 +302,26 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             />
           </mesh>
         )}
+        {frontHoloTex && (
+          <mesh position={[0, 0, frontSurface + surfaceGap * 3]}>
+            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <meshPhysicalMaterial
+              map={frontHoloTex}
+              transparent
+              depthWrite={false}
+              metalness={0.9}
+              roughness={0.12}
+              clearcoat={1}
+              clearcoatRoughness={0.05}
+              iridescence={1}
+              iridescenceIOR={1.6}
+              iridescenceThicknessRange={[200, 820]}
+              envMapIntensity={2.4}
+              polygonOffset
+              polygonOffsetFactor={-2}
+            />
+          </mesh>
+        )}
         {backTex && (
           <mesh position={[0, 0, backSurface - surfaceGap]} rotation={[0, Math.PI, 0]}>
             <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
@@ -310,6 +332,26 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
               depthWrite={false}
               polygonOffset
               polygonOffsetFactor={-1}
+            />
+          </mesh>
+        )}
+        {backHoloTex && (
+          <mesh position={[0, 0, backSurface - surfaceGap * 3]} rotation={[0, Math.PI, 0]}>
+            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <meshPhysicalMaterial
+              map={backHoloTex}
+              transparent
+              depthWrite={false}
+              metalness={0.9}
+              roughness={0.12}
+              clearcoat={1}
+              clearcoatRoughness={0.05}
+              iridescence={1}
+              iridescenceIOR={1.6}
+              iridescenceThicknessRange={[200, 820]}
+              envMapIntensity={2.4}
+              polygonOffset
+              polygonOffsetFactor={-2}
             />
           </mesh>
         )}

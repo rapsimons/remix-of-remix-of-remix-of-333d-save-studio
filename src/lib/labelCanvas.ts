@@ -71,9 +71,46 @@ function drawStyledImage(
   ctx.drawImage(layer, x, y, width, height);
 }
 
+/** stamp custom text / artwork on top of a sticker */
+async function drawStickerContent(
+  ctx: CanvasRenderingContext2D,
+  o: LabelObject,
+  width: number,
+  height: number,
+) {
+  if (o.labelImage) {
+    try {
+      const stamp = await loadImage(o.labelImage);
+      const scale = o.labelImageScale ?? 0.5;
+      const sw = width * scale;
+      const sh = sw / (stamp.width / stamp.height || 1);
+      ctx.drawImage(stamp, -sw / 2, -sh / 2 - (o.labelText ? height * 0.12 : 0), sw, sh);
+    } catch {
+      /* skip */
+    }
+  }
+  if (o.labelText) {
+    const fs = (o.labelSize ?? 0.22) * height;
+    ctx.font = `${fs}px ${o.labelFontFamily ? `"${o.labelFontFamily}", ` : ""}ui-monospace, monospace`;
+    ctx.fillStyle = o.labelColor || "#1a1a1a";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(o.labelText, 0, o.labelImage ? height * 0.26 : 0);
+  }
+}
+
+export type LabelFilter = "all" | "holo" | "base";
+
+function matches(o: LabelObject, filter: LabelFilter) {
+  if (filter === "all") return true;
+  const isHolo = o.type === "image" && o.stickerKind === "holo";
+  return filter === "holo" ? isHolo : !isHolo;
+}
+
 export async function renderLabel(
   objects: LabelObject[],
   size = 1024,
+  filter: LabelFilter = "all",
 ): Promise<HTMLCanvasElement> {
   const w = size;
   const h = Math.round(size / LABEL_ASPECT);
@@ -84,6 +121,7 @@ export async function renderLabel(
   ctx.clearRect(0, 0, w, h);
 
   for (const o of objects) {
+    if (!matches(o, filter)) continue;
     ctx.save();
     ctx.globalAlpha = o.opacity ?? 1;
     ctx.translate(o.x * w, o.y * h);
@@ -94,6 +132,7 @@ export async function renderLabel(
         const iw = o.w * w;
         const ih = iw / (o.aspect || img.width / img.height || 1);
         drawStyledImage(ctx, img, o, iw, ih);
+        await drawStickerContent(ctx, o, iw, ih);
       } catch {
         /* skip */
       }
