@@ -196,6 +196,33 @@ export function Editor2D() {
                       }}
                     />
                   )}
+                  {(o.labelImage || o.labelText) && (
+                    <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-[4%]">
+                      {o.labelImage && (
+                        <img
+                          src={o.labelImage}
+                          alt=""
+                          draggable={false}
+                          className="block"
+                          style={{ width: `${(o.labelImageScale ?? 0.5) * 100}%` }}
+                        />
+                      )}
+                      {o.labelText && (
+                        <span
+                          className="block whitespace-pre text-center leading-tight"
+                          style={{
+                            fontFamily: o.labelFontFamily
+                              ? `"${o.labelFontFamily}", monospace`
+                              : "var(--font-mono)",
+                            fontSize: `${(o.labelSize ?? 0.22) * o.w * 100}cqw`,
+                            color: o.labelColor ?? "#1a1a1a",
+                          }}
+                        >
+                          {o.labelText}
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </div>
               ) : (
                 <span
