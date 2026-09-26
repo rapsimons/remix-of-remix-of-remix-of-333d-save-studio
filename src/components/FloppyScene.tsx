@@ -17,33 +17,52 @@ type Props = {
 };
 
 function dominantNormal(root: THREE.Object3D): THREE.Vector3 {
-  // accumulate n * n^T over surface normals; the dominant eigenvector is the
-  // normal of the largest flat face (the disk face)
-  const m = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  // bin face normals by direction, weighted by triangle area; the largest bin
+  // is the normal of the biggest flat face (the disk face)
+  const bins = new Map<string, { area: number; n: THREE.Vector3 }>();
   const n = new THREE.Vector3();
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const ab = new THREE.Vector3();
+  const ac = new THREE.Vector3();
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
-    const attr = mesh.geometry.getAttribute("normal");
-    if (!attr) return;
+    const geo = mesh.geometry;
+    const pos = geo.getAttribute("position");
+    if (!pos) return;
     const nm = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
-    const step = Math.max(1, Math.floor(attr.count / 4000));
-    for (let i = 0; i < attr.count; i += step) {
-      n.fromBufferAttribute(attr as THREE.BufferAttribute, i).applyMatrix3(nm).normalize();
-      const v = [n.x, n.y, n.z];
-      for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) m[a * 3 + b]! += v[a]! * v[b]!;
+    const index = geo.getIndex();
+    const triCount = index ? index.count / 3 : pos.count / 3;
+    const step = Math.max(1, Math.floor(triCount / 6000));
+    for (let t = 0; t < triCount; t += step) {
+      const i0 = index ? index.getX(t * 3) : t * 3;
+      const i1 = index ? index.getX(t * 3 + 1) : t * 3 + 1;
+      const i2 = index ? index.getX(t * 3 + 2) : t * 3 + 2;
+      a.fromBufferAttribute(pos as THREE.BufferAttribute, i0).applyMatrix4(mesh.matrixWorld);
+      b.fromBufferAttribute(pos as THREE.BufferAttribute, i1).applyMatrix4(mesh.matrixWorld);
+      c.fromBufferAttribute(pos as THREE.BufferAttribute, i2).applyMatrix4(mesh.matrixWorld);
+      ab.subVectors(b, a);
+      ac.subVectors(c, a);
+      n.crossVectors(ab, ac);
+      const area2 = n.length();
+      if (area2 < 1e-10) continue;
+      n.divideScalar(area2).applyMatrix3(nm).normalize();
+      const key = `${Math.round(n.x * 20)},${Math.round(n.y * 20)},${Math.round(n.z * 20)}`;
+      const bin = bins.get(key);
+      if (bin) {
+        bin.area += area2 / 2;
+      } else {
+        bins.set(key, { area: area2 / 2, n: n.clone() });
+      }
     }
   });
-  let v = new THREE.Vector3(0.3, 0.5, 0.81).normalize();
-  for (let it = 0; it < 40; it++) {
-    const x = m[0]! * v.x + m[1]! * v.y + m[2]! * v.z;
-    const y = m[3]! * v.x + m[4]! * v.y + m[5]! * v.z;
-    const z = m[6]! * v.x + m[7]! * v.y + m[8]! * v.z;
-    const nv = new THREE.Vector3(x, y, z);
-    if (nv.lengthSq() < 1e-12) break;
-    v = nv.normalize();
+  let best: { area: number; n: THREE.Vector3 } | undefined;
+  for (const bin of bins.values()) {
+    if (!best || bin.area > best.area) best = bin;
   }
-  return v;
+  return best ? best.n.clone().normalize() : new THREE.Vector3(0, 0, 1);
 }
 
 function normalize(scene: THREE.Object3D) {
@@ -52,27 +71,32 @@ function normalize(scene: THREE.Object3D) {
 
   // rotate so the disk face points at the camera (+Z)
   const normal = dominantNormal(clone);
-  const q = new THREE.Quaternion().setFromUnitVectors(normal, new THREE.Vector3(0, 0, 1));
+  const qBase = new THREE.Quaternion().setFromUnitVectors(normal, new THREE.Vector3(0, 0, 1));
   const aligned = new THREE.Group();
-  aligned.quaternion.copy(q);
   aligned.add(clone);
-  aligned.updateMatrixWorld(true);
 
-  // roll the face upright: pick the in-plane angle with the tightest bounds
+  // roll the face upright: pick the in-plane angle with the tightest bounds.
+  // compose roll with the base alignment via quaternion multiply — assigning
+  // rotation.z directly would wipe out the face alignment
   let bestRoll = 0;
   let bestArea = Infinity;
   const probe = new THREE.Vector3();
+  const qRoll = new THREE.Quaternion();
+  const zAxis = new THREE.Vector3(0, 0, 1);
   for (let deg = -45; deg <= 45; deg += 1) {
-    aligned.rotation.z = (deg * Math.PI) / 180;
+    const rad = (deg * Math.PI) / 180;
+    qRoll.setFromAxisAngle(zAxis, rad);
+    aligned.quaternion.copy(qRoll).multiply(qBase);
     aligned.updateMatrixWorld(true);
     new THREE.Box3().setFromObject(aligned, true).getSize(probe);
     const area = probe.x * probe.y;
     if (area < bestArea) {
       bestArea = area;
-      bestRoll = (deg * Math.PI) / 180;
+      bestRoll = rad;
     }
   }
-  aligned.rotation.z = bestRoll;
+  qRoll.setFromAxisAngle(zAxis, bestRoll);
+  aligned.quaternion.copy(qRoll).multiply(qBase);
   aligned.updateMatrixWorld(true);
 
   const box = new THREE.Box3().setFromObject(aligned, true);
