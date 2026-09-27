@@ -217,6 +217,39 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     [],
   );
 
+  // procedural studio environment used by the foil shader's reflections
+  const holoEnv = useMemo(() => studioEnvTexture(), []);
+  useEffect(() => () => holoEnv.dispose(), [holoEnv]);
+
+  const frontHoloMat = useMemo(
+    () => (frontHoloTex ? createHoloMaterial({ map: frontHoloTex, env: holoEnv }) : null),
+    [frontHoloTex, holoEnv],
+  );
+  const backHoloMat = useMemo(
+    () => (backHoloTex ? createHoloMaterial({ map: backHoloTex, env: holoEnv }) : null),
+    [backHoloTex, holoEnv],
+  );
+
+  // keep the foil look in sync with the user's settings
+  useEffect(() => {
+    for (const m of [frontHoloMat, backHoloMat]) {
+      if (!m) continue;
+      m.uniforms.uHolo!.value = design.holoIntensity ?? 0.85;
+      m.uniforms.uBands!.value = design.holoBands ?? 10;
+      m.uniforms.uGrain!.value = design.holoGrain ?? 0.25;
+      m.uniforms.uPattern!.value = holoPatternIndex[design.holoPattern ?? "linear"];
+      m.uniforms.uOverlay!.value = holoOverlayIndex[design.holoOverlay ?? "triangles"];
+    }
+  }, [
+    frontHoloMat,
+    backHoloMat,
+    design.holoIntensity,
+    design.holoBands,
+    design.holoGrain,
+    design.holoPattern,
+    design.holoOverlay,
+  ]);
+
   useEffect(() => {
     object.traverse((o) => {
       const mesh = o as THREE.Mesh;
