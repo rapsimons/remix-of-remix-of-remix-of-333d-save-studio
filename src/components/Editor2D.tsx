@@ -3,7 +3,9 @@ import { cn } from "@/lib/utils";
 import { LABEL_ASPECT } from "@/lib/labelCanvas";
 import { useStudio } from "@/lib/store";
 import type { LabelObject } from "@/lib/types";
-import wireframe from "@/assets/floppy-wireframe.svg.asset.json";
+import frontWireframe from "@/assets/floppy-front.svg.asset.json";
+import backWireframe from "@/assets/floppy-back.svg.asset.json";
+
 
 type Gesture =
   | { kind: "move"; id: string; startX: number; startY: number; ox: number; oy: number }
@@ -118,8 +120,9 @@ export function Editor2D() {
 
   return (
     <div
-      className="relative mx-auto w-full max-w-[420px] touch-none select-none"
+      className="relative mx-auto w-full max-w-[520px] touch-none select-none"
       style={{ aspectRatio: String(LABEL_ASPECT) }}
+
     >
       <div
         ref={ref}
@@ -132,22 +135,22 @@ export function Editor2D() {
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute inset-0 opacity-20" style={{ backgroundColor: design.color }} />
           <div
-            className="absolute inset-[3%]"
+            className="absolute inset-0"
             style={{
               backgroundColor: design.color,
               opacity: 0.9,
-              WebkitMaskImage: `url(${wireframe.url})`,
-              maskImage: `url(${wireframe.url})`,
-              WebkitMaskSize: "contain",
-              maskSize: "contain",
+              WebkitMaskImage: `url(${side === "back" ? backWireframe.url : frontWireframe.url})`,
+              maskImage: `url(${side === "back" ? backWireframe.url : frontWireframe.url})`,
+              WebkitMaskSize: "100% 100%",
+              maskSize: "100% 100%",
               WebkitMaskRepeat: "no-repeat",
               maskRepeat: "no-repeat",
               WebkitMaskPosition: "center",
               maskPosition: "center",
-              transform: side === "back" ? "scaleX(-1)" : undefined,
             }}
           />
         </div>
+
 
         <div className="blueprint-grid pointer-events-none absolute inset-0 opacity-55" />
         {/* registration marks */}

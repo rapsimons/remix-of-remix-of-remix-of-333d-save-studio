@@ -69,9 +69,10 @@ function normalize(scene: THREE.Object3D) {
   const clone = scene.clone(true);
   clone.updateMatrixWorld(true);
 
-  // rotate so the disk face points at the camera (+Z)
-  const normal = dominantNormal(clone);
-  const qBase = new THREE.Quaternion().setFromUnitVectors(normal, new THREE.Vector3(0, 0, 1));
+  // the model's dominant face normal points out of its BACK, so negate it to
+  // get the front face and turn that toward the camera (+Z)
+  const frontNormal = dominantNormal(clone).negate();
+  const qBase = new THREE.Quaternion().setFromUnitVectors(frontNormal, new THREE.Vector3(0, 0, 1));
   const aligned = new THREE.Group();
   aligned.add(clone);
 
@@ -98,6 +99,22 @@ function normalize(scene: THREE.Object3D) {
   qRoll.setFromAxisAngle(zAxis, bestRoll);
   aligned.quaternion.copy(qRoll).multiply(qBase);
   aligned.updateMatrixWorld(true);
+
+  // the metal shutter belongs at the top; flip 180° when it lands at the bottom
+  let shutterMesh: THREE.Object3D | undefined;
+  aligned.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh && o.name.toLowerCase().includes("shutter")) shutterMesh = o;
+  });
+  if (shutterMesh) {
+    const shutterY = new THREE.Box3().setFromObject(shutterMesh).getCenter(new THREE.Vector3()).y;
+    const bodyY = new THREE.Box3().setFromObject(aligned, true).getCenter(new THREE.Vector3()).y;
+    if (shutterY < bodyY) {
+      qRoll.setFromAxisAngle(zAxis, bestRoll + Math.PI);
+      aligned.quaternion.copy(qRoll).multiply(qBase);
+      aligned.updateMatrixWorld(true);
+    }
+  }
+
 
   const box = new THREE.Box3().setFromObject(aligned, true);
   const size = new THREE.Vector3();
@@ -291,7 +308,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         <primitive object={object} />
         {frontTex && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>
-            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <planeGeometry args={[faceW, faceH]} />
             <meshStandardMaterial
               map={frontTex}
               transparent
@@ -304,7 +321,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         )}
         {frontHoloTex && (
           <mesh position={[0, 0, frontSurface + surfaceGap * 3]}>
-            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <planeGeometry args={[faceW, faceH]} />
             <meshPhysicalMaterial
               map={frontHoloTex}
               transparent
@@ -324,7 +341,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         )}
         {backTex && (
           <mesh position={[0, 0, backSurface - surfaceGap]} rotation={[0, Math.PI, 0]}>
-            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <planeGeometry args={[faceW, faceH]} />
             <meshStandardMaterial
               map={backTex}
               transparent
@@ -337,7 +354,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         )}
         {backHoloTex && (
           <mesh position={[0, 0, backSurface - surfaceGap * 3]} rotation={[0, Math.PI, 0]}>
-            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <planeGeometry args={[faceW, faceH]} />
             <meshPhysicalMaterial
               map={backHoloTex}
               transparent
