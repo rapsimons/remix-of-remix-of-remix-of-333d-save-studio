@@ -120,8 +120,9 @@ export function Editor2D() {
 
   return (
     <div
-      className="relative mx-auto w-full max-w-[420px] touch-none select-none"
+      className="relative mx-auto w-full max-w-[520px] touch-none select-none"
       style={{ aspectRatio: String(LABEL_ASPECT) }}
+
     >
       <div
         ref={ref}
