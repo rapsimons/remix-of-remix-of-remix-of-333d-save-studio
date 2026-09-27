@@ -331,6 +331,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     g.rotation.x = s.x;
     g.rotation.y = s.y;
     camera.lookAt(0, 0, 0);
+    // the foil's rainbow is view-dependent: feed it the live camera position
+    if (frontHoloMat) frontHoloMat.uniforms.uCamPos!.value.copy(camera.position);
+    if (backHoloMat) backHoloMat.uniforms.uCamPos!.value.copy(camera.position);
   });
 
   const surfaceGap = 0.0005;
