@@ -5,6 +5,12 @@ import * as THREE from "three";
 import type { Design } from "@/lib/types";
 import { useLabelTexture } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
+import {
+  createHoloMaterial,
+  holoOverlayIndex,
+  holoPatternIndex,
+  studioEnvTexture,
+} from "@/lib/holoShader";
 
 type Props = {
   design: Design;
