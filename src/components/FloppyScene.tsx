@@ -383,24 +383,14 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             />
           </mesh>
         )}
-        {backHoloTex && (
-          <mesh position={[0, 0, backSurface - surfaceGap * 3]} rotation={[0, Math.PI, 0]}>
+        {backHoloMat && (
+          <mesh
+            position={[0, 0, backSurface - surfaceGap * 3]}
+            rotation={[0, Math.PI, 0]}
+            material={backHoloMat}
+            renderOrder={20}
+          >
             <planeGeometry args={[faceW, faceH]} />
-            <meshPhysicalMaterial
-              map={backHoloTex}
-              transparent
-              depthWrite={false}
-              metalness={0.9}
-              roughness={0.12}
-              clearcoat={1}
-              clearcoatRoughness={0.05}
-              iridescence={1}
-              iridescenceIOR={1.6}
-              iridescenceThicknessRange={[200, 820]}
-              envMapIntensity={2.4}
-              polygonOffset
-              polygonOffsetFactor={-2}
-            />
           </mesh>
         )}
       </group>
