@@ -67,6 +67,12 @@ export type Design = {
   autoRotateSpeed: number;
   alignment: Alignment;
   modelUrl?: string;
+  /** holographic foil look for holo stickers */
+  holoPattern?: "linear" | "radial" | "patches";
+  holoOverlay?: "none" | "triangles" | "squares" | "stripes";
+  holoIntensity?: number;
+  holoBands?: number;
+  holoGrain?: number;
   updatedAt: number;
 };
 
@@ -98,6 +104,11 @@ export function createDesign(): Design {
     autoRotate: true,
     autoRotateSpeed: 0.4,
     alignment: { ...defaultAlignment },
+    holoPattern: "linear",
+    holoOverlay: "triangles",
+    holoIntensity: 0.85,
+    holoBands: 10,
+    holoGrain: 0.25,
     updatedAt: Date.now(),
   };
 }
