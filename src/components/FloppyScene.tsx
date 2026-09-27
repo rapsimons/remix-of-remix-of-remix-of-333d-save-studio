@@ -308,7 +308,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         <primitive object={object} />
         {frontTex && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>
-            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <planeGeometry args={[faceW, faceH]} />
             <meshStandardMaterial
               map={frontTex}
               transparent
@@ -321,7 +321,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         )}
         {frontHoloTex && (
           <mesh position={[0, 0, frontSurface + surfaceGap * 3]}>
-            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <planeGeometry args={[faceW, faceH]} />
             <meshPhysicalMaterial
               map={frontHoloTex}
               transparent
@@ -341,7 +341,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         )}
         {backTex && (
           <mesh position={[0, 0, backSurface - surfaceGap]} rotation={[0, Math.PI, 0]}>
-            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <planeGeometry args={[faceW, faceH]} />
             <meshStandardMaterial
               map={backTex}
               transparent
@@ -354,7 +354,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         )}
         {backHoloTex && (
           <mesh position={[0, 0, backSurface - surfaceGap * 3]} rotation={[0, Math.PI, 0]}>
-            <planeGeometry args={[faceW * 0.94, faceH * 0.94]} />
+            <planeGeometry args={[faceW, faceH]} />
             <meshPhysicalMaterial
               map={backHoloTex}
               transparent
