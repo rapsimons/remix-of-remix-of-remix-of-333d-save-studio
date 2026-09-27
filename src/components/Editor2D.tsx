@@ -3,7 +3,9 @@ import { cn } from "@/lib/utils";
 import { LABEL_ASPECT } from "@/lib/labelCanvas";
 import { useStudio } from "@/lib/store";
 import type { LabelObject } from "@/lib/types";
-import wireframe from "@/assets/floppy-wireframe.svg.asset.json";
+import frontWireframe from "@/assets/floppy-front.svg.asset.json";
+import backWireframe from "@/assets/floppy-back.svg.asset.json";
+
 
 type Gesture =
   | { kind: "move"; id: string; startX: number; startY: number; ox: number; oy: number }
