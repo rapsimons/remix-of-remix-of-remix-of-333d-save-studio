@@ -234,11 +234,11 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   useEffect(() => {
     for (const m of [frontHoloMat, backHoloMat]) {
       if (!m) continue;
-      m.uniforms.uHolo!.value = design.holoIntensity ?? 0.85;
-      m.uniforms.uBands!.value = design.holoBands ?? 10;
-      m.uniforms.uGrain!.value = design.holoGrain ?? 0.25;
-      m.uniforms.uPattern!.value = holoPatternIndex[design.holoPattern ?? "linear"];
-      m.uniforms.uOverlay!.value = holoOverlayIndex[design.holoOverlay ?? "triangles"];
+      m.uniforms['uHolo']!.value = design.holoIntensity ?? 0.85;
+      m.uniforms['uBands']!.value = design.holoBands ?? 10;
+      m.uniforms['uGrain']!.value = design.holoGrain ?? 0.25;
+      m.uniforms['uPattern']!.value = holoPatternIndex[design.holoPattern ?? "linear"];
+      m.uniforms['uOverlay']!.value = holoOverlayIndex[design.holoOverlay ?? "triangles"];
     }
   }, [
     frontHoloMat,
@@ -332,8 +332,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     g.rotation.y = s.y;
     camera.lookAt(0, 0, 0);
     // the foil's rainbow is view-dependent: feed it the live camera position
-    if (frontHoloMat) frontHoloMat.uniforms.uCamPos!.value.copy(camera.position);
-    if (backHoloMat) backHoloMat.uniforms.uCamPos!.value.copy(camera.position);
+    if (frontHoloMat) frontHoloMat.uniforms['uCamPos']!.value.copy(camera.position);
+    if (backHoloMat) backHoloMat.uniforms['uCamPos']!.value.copy(camera.position);
   });
 
   const surfaceGap = 0.0005;
