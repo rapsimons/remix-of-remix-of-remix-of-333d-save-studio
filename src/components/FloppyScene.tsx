@@ -5,6 +5,12 @@ import * as THREE from "three";
 import type { Design } from "@/lib/types";
 import { useLabelTexture } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
+import {
+  createHoloMaterial,
+  holoOverlayIndex,
+  holoPatternIndex,
+  studioEnvTexture,
+} from "@/lib/holoShader";
 
 type Props = {
   design: Design;
@@ -211,6 +217,39 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     [],
   );
 
+  // procedural studio environment used by the foil shader's reflections
+  const holoEnv = useMemo(() => studioEnvTexture(), []);
+  useEffect(() => () => holoEnv.dispose(), [holoEnv]);
+
+  const frontHoloMat = useMemo(
+    () => (frontHoloTex ? createHoloMaterial({ map: frontHoloTex, env: holoEnv }) : null),
+    [frontHoloTex, holoEnv],
+  );
+  const backHoloMat = useMemo(
+    () => (backHoloTex ? createHoloMaterial({ map: backHoloTex, env: holoEnv }) : null),
+    [backHoloTex, holoEnv],
+  );
+
+  // keep the foil look in sync with the user's settings
+  useEffect(() => {
+    for (const m of [frontHoloMat, backHoloMat]) {
+      if (!m) continue;
+      m.uniforms['uHolo']!.value = design.holoIntensity ?? 0.85;
+      m.uniforms['uBands']!.value = design.holoBands ?? 10;
+      m.uniforms['uGrain']!.value = design.holoGrain ?? 0.25;
+      m.uniforms['uPattern']!.value = holoPatternIndex[design.holoPattern ?? "linear"];
+      m.uniforms['uOverlay']!.value = holoOverlayIndex[design.holoOverlay ?? "triangles"];
+    }
+  }, [
+    frontHoloMat,
+    backHoloMat,
+    design.holoIntensity,
+    design.holoBands,
+    design.holoGrain,
+    design.holoPattern,
+    design.holoOverlay,
+  ]);
+
   useEffect(() => {
     object.traverse((o) => {
       const mesh = o as THREE.Mesh;
@@ -292,6 +331,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     g.rotation.x = s.x;
     g.rotation.y = s.y;
     camera.lookAt(0, 0, 0);
+    // the foil's rainbow is view-dependent: feed it the live camera position
+    if (frontHoloMat) frontHoloMat.uniforms['uCamPos']!.value.copy(camera.position);
+    if (backHoloMat) backHoloMat.uniforms['uCamPos']!.value.copy(camera.position);
   });
 
   const surfaceGap = 0.0005;
@@ -319,24 +361,13 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             />
           </mesh>
         )}
-        {frontHoloTex && (
-          <mesh position={[0, 0, frontSurface + surfaceGap * 3]}>
+        {frontHoloMat && (
+          <mesh
+            position={[0, 0, frontSurface + surfaceGap * 3]}
+            material={frontHoloMat}
+            renderOrder={20}
+          >
             <planeGeometry args={[faceW, faceH]} />
-            <meshPhysicalMaterial
-              map={frontHoloTex}
-              transparent
-              depthWrite={false}
-              metalness={0.9}
-              roughness={0.12}
-              clearcoat={1}
-              clearcoatRoughness={0.05}
-              iridescence={1}
-              iridescenceIOR={1.6}
-              iridescenceThicknessRange={[200, 820]}
-              envMapIntensity={2.4}
-              polygonOffset
-              polygonOffsetFactor={-2}
-            />
           </mesh>
         )}
         {backTex && (
@@ -352,24 +383,14 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             />
           </mesh>
         )}
-        {backHoloTex && (
-          <mesh position={[0, 0, backSurface - surfaceGap * 3]} rotation={[0, Math.PI, 0]}>
+        {backHoloMat && (
+          <mesh
+            position={[0, 0, backSurface - surfaceGap * 3]}
+            rotation={[0, Math.PI, 0]}
+            material={backHoloMat}
+            renderOrder={20}
+          >
             <planeGeometry args={[faceW, faceH]} />
-            <meshPhysicalMaterial
-              map={backHoloTex}
-              transparent
-              depthWrite={false}
-              metalness={0.9}
-              roughness={0.12}
-              clearcoat={1}
-              clearcoatRoughness={0.05}
-              iridescence={1}
-              iridescenceIOR={1.6}
-              iridescenceThicknessRange={[200, 820]}
-              envMapIntensity={2.4}
-              polygonOffset
-              polygonOffsetFactor={-2}
-            />
           </mesh>
         )}
       </group>

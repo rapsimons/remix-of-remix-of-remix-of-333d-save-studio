@@ -465,6 +465,74 @@ export function Studio() {
                   }
                 />
               </section>
+
+              <section className="space-y-2">
+                <span className="label-caps text-muted-foreground">Foil finish</span>
+                <div className="grid grid-cols-4 gap-1" aria-label="Foil facets">
+                  {(["none", "triangles", "squares", "stripes"] as const).map((o) => (
+                    <Btn
+                      key={o}
+                      label={o === "none" ? "smooth" : o}
+                      active={(design.holoOverlay ?? "triangles") === o}
+                      onClick={() =>
+                        store.patch((d) => {
+                          d.holoOverlay = o;
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-1" aria-label="Foil flow">
+                  {(["linear", "radial", "patches"] as const).map((p) => (
+                    <Btn
+                      key={p}
+                      label={p}
+                      active={(design.holoPattern ?? "linear") === p}
+                      onClick={() =>
+                        store.patch((d) => {
+                          d.holoPattern = p;
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+                <Slider
+                  label="Shine"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={design.holoIntensity ?? 0.85}
+                  onChange={(v) =>
+                    store.patch((d) => {
+                      d.holoIntensity = v;
+                    })
+                  }
+                />
+                <Slider
+                  label="Rainbow bands"
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={design.holoBands ?? 10}
+                  onChange={(v) =>
+                    store.patch((d) => {
+                      d.holoBands = v;
+                    })
+                  }
+                />
+                <Slider
+                  label="Sparkle"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={design.holoGrain ?? 0.25}
+                  onChange={(v) =>
+                    store.patch((d) => {
+                      d.holoGrain = v;
+                    })
+                  }
+                />
+              </section>
             </div>
           </div>
         )}
