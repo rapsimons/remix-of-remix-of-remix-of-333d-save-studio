@@ -64,6 +64,9 @@ export const icons = {
   link: LinkIcon,
   upload: Upload,
   flip: FlipHorizontal,
+  expand: Maximize2,
+  mold: Stamp,
+
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof icons;
