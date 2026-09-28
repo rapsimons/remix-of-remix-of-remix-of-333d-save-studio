@@ -20,7 +20,10 @@ type Props = {
   lockY: boolean;
   onDoubleTap?: (() => void) | undefined;
   interactive?: boolean | undefined;
+  /** enable pinch / wheel zoom (used by the full-screen viewer) */
+  allowZoom?: boolean | undefined;
 };
+
 
 function dominantNormal(root: THREE.Object3D): THREE.Vector3 {
   // bin face normals by direction, weighted by triangle area; the largest bin
@@ -158,18 +161,25 @@ function normalize(scene: THREE.Object3D) {
   return { object: outer, frontSurface, backSurface, faceW: size.x * scale, faceH: size.y * scale };
 }
 
-function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true }: Props) {
+function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true, allowZoom = false }: Props) {
   const gltf = useGLTF(modelUrl || DEFAULT_MODEL_URL);
   const group = useRef<THREE.Group>(null);
   const spin = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
+  const zoom = useRef(1);
   const { gl, camera } = useThree();
+
 
   const { object, frontSurface, backSurface, faceW, faceH } = useMemo(() => normalize(gltf.scene), [gltf.scene]);
 
-  const frontTex = useLabelTexture(design.front, 1024, "base");
-  const backTex = useLabelTexture(design.back, 1024, "base");
-  const frontHoloTex = useLabelTexture(design.front, 1024, "holo");
-  const backHoloTex = useLabelTexture(design.back, 1024, "holo");
+  const shell = useMemo(
+    () => ({ color: design.color, opacity: design.opacity }),
+    [design.color, design.opacity],
+  );
+  const frontTex = useLabelTexture(design.front, 1024, "base", shell);
+  const backTex = useLabelTexture(design.back, 1024, "base", shell);
+  const frontHoloTex = useLabelTexture(design.front, 1024, "holo", shell);
+  const backHoloTex = useLabelTexture(design.back, 1024, "holo", shell);
+
 
   const material = useMemo(
     () =>
@@ -265,7 +275,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     });
   }, [object, material, metalMaterial, opticalDiscMaterial]);
 
-  // pointer gestures
+  // pointer gestures (drag to spin, pinch / wheel to zoom)
   useEffect(() => {
     if (!interactive) return;
     const el = gl.domElement;
@@ -273,8 +283,23 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     let lastX = 0;
     let lastY = 0;
     let lastTap = 0;
+    const active = new Map<number, { x: number; y: number }>();
+    let pinchStart = 0;
+    let pinchZoom = 1;
+
+    const twoFingerDist = () => {
+      const [a, b] = [...active.values()];
+      return a && b ? Math.hypot(b.x - a.x, b.y - a.y) : 0;
+    };
 
     const down = (e: PointerEvent) => {
+      active.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (active.size === 2) {
+        pinchStart = twoFingerDist();
+        pinchZoom = zoom.current;
+        dragging = false;
+        return;
+      }
       dragging = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -283,6 +308,12 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       lastTap = now;
     };
     const move = (e: PointerEvent) => {
+      if (active.has(e.pointerId)) active.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (active.size === 2 && pinchStart > 0) {
+        const d = twoFingerDist();
+        if (d > 0) zoom.current = Math.max(0.6, Math.min(4, (pinchZoom * d) / pinchStart));
+        return;
+      }
       if (!dragging) return;
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
@@ -291,18 +322,29 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       if (!lockY) spin.current.vy = dx * 0.005;
       if (!lockX) spin.current.vx = dy * 0.005;
     };
-    const up = () => {
+    const up = (e: PointerEvent) => {
+      active.delete(e.pointerId);
+      if (active.size < 2) pinchStart = 0;
       dragging = false;
     };
+    const wheel = (e: WheelEvent) => {
+      if (!allowZoom) return;
+      e.preventDefault();
+      zoom.current = Math.max(0.6, Math.min(4, zoom.current * (e.deltaY > 0 ? 0.92 : 1.08)));
+    };
     el.addEventListener("pointerdown", down);
+    el.addEventListener("wheel", wheel, { passive: false });
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
     return () => {
       el.removeEventListener("pointerdown", down);
+      el.removeEventListener("wheel", wheel);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
     };
-  }, [gl, lockX, lockY, onDoubleTap, interactive]);
+  }, [gl, lockX, lockY, onDoubleTap, interactive, allowZoom]);
 
   useFrame((_, rawDelta) => {
     const dt = Math.min(rawDelta, 0.05);
@@ -312,13 +354,14 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     const g = group.current;
     if (!g) return;
     const s = spin.current;
+    const z = allowZoom ? zoom.current : 1;
     if (flat) {
       s.vx = 0;
       s.vy = 0;
       const ty = Math.round(s.y / (Math.PI * 2)) * Math.PI * 2;
       s.x += (0 - s.x) * Math.min(1, dt * 6);
       s.y += (ty - s.y) * Math.min(1, dt * 6);
-      camera.position.lerp(new THREE.Vector3(0, 0, fit * 1.15), Math.min(1, dt * 4));
+      camera.position.lerp(new THREE.Vector3(0, 0, (fit * 1.15) / z), Math.min(1, dt * 4));
     } else {
       s.x += s.vx;
       s.y += s.vy;
@@ -326,8 +369,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       s.vx *= damp;
       s.vy *= damp;
       if (design.autoRotate && Math.abs(s.vy) < 0.0008) s.y += design.autoRotateSpeed * dt;
-      camera.position.lerp(new THREE.Vector3(0, 0, fit * 1.5), Math.min(1, dt * 3));
+      camera.position.lerp(new THREE.Vector3(0, 0, (fit * 1.5) / z), Math.min(1, dt * 3));
     }
+
     g.rotation.x = s.x;
     g.rotation.y = s.y;
     camera.lookAt(0, 0, 0);

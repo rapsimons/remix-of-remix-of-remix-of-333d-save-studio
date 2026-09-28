@@ -4,6 +4,8 @@ import { Icon } from "./ui/Icon";
 import { Editor2D } from "./Editor2D";
 import { FloppyViewer } from "./FloppyViewer";
 import { ImageImporter } from "./ImageImporter";
+import { MoldImporter } from "./MoldImporter";
+
 import { DesignGallery, FontGallery, ModelGallery, StickerGallery } from "./Galleries";
 import { useStudio } from "@/lib/store";
 import { useTheme } from "@/lib/useTheme";
@@ -12,7 +14,7 @@ import { renderLabel } from "@/lib/labelCanvas";
 import { defaultAlignment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type Panel = "holo" | "paper" | "fonts" | "designs" | "models" | "import" | "links" | null;
+type Panel = "holo" | "paper" | "fonts" | "designs" | "models" | "import" | "links" | "mold" | null;
 type Mode = "design" | "view" | "align";
 
 export function Studio() {
@@ -145,6 +147,8 @@ export function Studio() {
               <Btn icon="sticker" label="Holo" onClick={() => setPanel("holo")} />
               <Btn icon="sticker" label="Paper" onClick={() => setPanel("paper")} />
               <Btn icon="font" label="Fonts" onClick={() => setPanel("fonts")} />
+              <Btn icon="mold" label="Mold" onClick={() => setPanel("mold")} />
+
             </div>
 
             {selected && (
@@ -256,7 +260,54 @@ export function Studio() {
                     )}
                   </div>
                 )}
-                {selected.type === "image" && (
+                {selected.type === "image" && selected.mold && (
+                  <div className="space-y-2 border-t border-hairline pt-2">
+                    <div className="grid grid-cols-2 gap-1">
+                      <Btn
+                        icon="mold"
+                        label="Deboss"
+                        active={selected.mold === "deboss"}
+                        onClick={() => store.updateObject(selected.id, { mold: "deboss" })}
+                      />
+                      <Btn
+                        icon="mold"
+                        label="Emboss"
+                        active={selected.mold === "emboss"}
+                        onClick={() => store.updateObject(selected.id, { mold: "emboss" })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      {(["shell", "clear", "custom"] as const).map((f) => (
+                        <Btn
+                          key={f}
+                          label={f}
+                          active={(selected.moldFill ?? "shell") === f}
+                          onClick={() => store.updateObject(selected.id, { moldFill: f })}
+                        />
+                      ))}
+                    </div>
+                    {(selected.moldFill ?? "shell") === "custom" && (
+                      <Field label="Mold tint">
+                        <input
+                          type="color"
+                          className="h-8 w-full border border-hairline bg-background"
+                          value={selected.moldColor ?? "#8a8f98"}
+                          onChange={(e) => store.updateObject(selected.id, { moldColor: e.target.value }, false)}
+                        />
+                      </Field>
+                    )}
+                    <Slider
+                      label="Depth"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={selected.moldDepth ?? 0.5}
+                      onChange={(v) => store.updateObject(selected.id, { moldDepth: v }, false)}
+                    />
+                  </div>
+                )}
+                {selected.type === "image" && !selected.mold && (
+
                   <div className="space-y-2 border-t border-hairline pt-2">
                     <Field label="Sticker text">
                       <input
@@ -611,6 +662,8 @@ export function Studio() {
       )}
 
       <ImageImporter open={panel === "import"} onClose={() => setPanel(null)} />
+      <MoldImporter open={panel === "mold"} onClose={() => setPanel(null)} />
+
       <StickerGallery open={panel === "holo"} onClose={() => setPanel(null)} kind="holo" />
       <StickerGallery open={panel === "paper"} onClose={() => setPanel(null)} kind="paper" />
       <FontGallery open={panel === "fonts"} onClose={() => setPanel(null)} />

@@ -18,6 +18,7 @@ export function FloppyViewer({
   className?: string;
 }) {
   const [flat, setFlat] = useState(false);
+  const [immersive, setImmersive] = useState(false);
 
   return (
     <div className={cn("relative h-full w-full", className)}>
@@ -33,6 +34,16 @@ export function FloppyViewer({
         <span className="pointer-events-none absolute inset-x-0 bottom-3 text-center label-caps text-muted-foreground">
           Double tap
         </span>
+      )}
+      {!flat && (
+        <button
+          type="button"
+          aria-label="Inspect in full screen"
+          onClick={() => setImmersive(true)}
+          className="absolute bottom-3 right-3 flex size-12 items-center justify-center rounded-full border border-hairline bg-background/80 backdrop-blur hover:bg-accent"
+        >
+          <Icon name="expand" className="size-5" />
+        </button>
       )}
       {flat && (
         <div
@@ -57,6 +68,30 @@ export function FloppyViewer({
           </div>
         </div>
       )}
+      {immersive && (
+        <div className="fixed inset-0 z-50 touch-none bg-background">
+          <FloppyScene
+            design={design}
+            modelUrl={design.modelUrl}
+            flat={false}
+            lockX={false}
+            lockY={false}
+            allowZoom
+          />
+          <span className="pointer-events-none absolute inset-x-0 bottom-5 text-center label-caps text-muted-foreground">
+            Drag to spin · pinch to zoom
+          </span>
+          <button
+            type="button"
+            aria-label="Exit full screen"
+            onClick={() => setImmersive(false)}
+            className="absolute right-4 top-4 flex size-12 items-center justify-center rounded-full border border-hairline bg-background/80 backdrop-blur hover:bg-accent"
+          >
+            <Icon name="close" className="size-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+

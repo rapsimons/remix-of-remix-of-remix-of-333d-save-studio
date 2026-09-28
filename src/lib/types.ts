@@ -36,7 +36,15 @@ export type LabelObject = {
   /** image stamped on top of a sticker */
   labelImage?: string;
   labelImageScale?: number;
+  /** molded-into-the-plastic artwork (traced silhouette) */
+  mold?: "deboss" | "emboss";
+  /** where the molded shape takes its colour from */
+  moldFill?: "shell" | "clear" | "custom";
+  moldColor?: string;
+  /** 0..1 relief depth */
+  moldDepth?: number;
 };
+
 
 export type MenuLink = {
   id: string;
