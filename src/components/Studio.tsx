@@ -258,7 +258,54 @@ export function Studio() {
                     )}
                   </div>
                 )}
-                {selected.type === "image" && (
+                {selected.type === "image" && selected.mold && (
+                  <div className="space-y-2 border-t border-hairline pt-2">
+                    <div className="grid grid-cols-2 gap-1">
+                      <Btn
+                        icon="mold"
+                        label="Deboss"
+                        active={selected.mold === "deboss"}
+                        onClick={() => store.updateObject(selected.id, { mold: "deboss" })}
+                      />
+                      <Btn
+                        icon="mold"
+                        label="Emboss"
+                        active={selected.mold === "emboss"}
+                        onClick={() => store.updateObject(selected.id, { mold: "emboss" })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      {(["shell", "clear", "custom"] as const).map((f) => (
+                        <Btn
+                          key={f}
+                          label={f}
+                          active={(selected.moldFill ?? "shell") === f}
+                          onClick={() => store.updateObject(selected.id, { moldFill: f })}
+                        />
+                      ))}
+                    </div>
+                    {(selected.moldFill ?? "shell") === "custom" && (
+                      <Field label="Mold tint">
+                        <input
+                          type="color"
+                          className="h-8 w-full border border-hairline bg-background"
+                          value={selected.moldColor ?? "#8a8f98"}
+                          onChange={(e) => store.updateObject(selected.id, { moldColor: e.target.value }, false)}
+                        />
+                      </Field>
+                    )}
+                    <Slider
+                      label="Depth"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={selected.moldDepth ?? 0.5}
+                      onChange={(v) => store.updateObject(selected.id, { moldDepth: v }, false)}
+                    />
+                  </div>
+                )}
+                {selected.type === "image" && !selected.mold && (
+
                   <div className="space-y-2 border-t border-hairline pt-2">
                     <Field label="Sticker text">
                       <input
