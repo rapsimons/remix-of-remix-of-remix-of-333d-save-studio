@@ -161,11 +161,13 @@ function normalize(scene: THREE.Object3D) {
   return { object: outer, frontSurface, backSurface, faceW: size.x * scale, faceH: size.y * scale };
 }
 
-function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true }: Props) {
+function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true, allowZoom = false }: Props) {
   const gltf = useGLTF(modelUrl || DEFAULT_MODEL_URL);
   const group = useRef<THREE.Group>(null);
   const spin = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
+  const zoom = useRef(1);
   const { gl, camera } = useThree();
+
 
   const { object, frontSurface, backSurface, faceW, faceH } = useMemo(() => normalize(gltf.scene), [gltf.scene]);
 
