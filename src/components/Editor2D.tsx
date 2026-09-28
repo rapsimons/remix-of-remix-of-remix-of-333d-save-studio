@@ -175,7 +175,10 @@ export function Editor2D() {
                 opacity: o.opacity,
               }}
             >
-              {o.type === "image" ? (
+              {o.type === "image" && o.mold ? (
+                <MoldPreview object={o} shellColor={design.color} shellOpacity={design.opacity} />
+              ) : o.type === "image" ? (
+
                 <div className="relative w-full">
                   <img
                     src={o.src}
