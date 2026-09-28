@@ -145,6 +145,8 @@ export function Studio() {
               <Btn icon="sticker" label="Holo" onClick={() => setPanel("holo")} />
               <Btn icon="sticker" label="Paper" onClick={() => setPanel("paper")} />
               <Btn icon="font" label="Fonts" onClick={() => setPanel("fonts")} />
+              <Btn icon="mold" label="Mold" onClick={() => setPanel("mold")} />
+
             </div>
 
             {selected && (
