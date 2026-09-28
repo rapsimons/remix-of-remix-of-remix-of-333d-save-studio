@@ -4,6 +4,8 @@ import { Icon } from "./ui/Icon";
 import { Editor2D } from "./Editor2D";
 import { FloppyViewer } from "./FloppyViewer";
 import { ImageImporter } from "./ImageImporter";
+import { MoldImporter } from "./MoldImporter";
+
 import { DesignGallery, FontGallery, ModelGallery, StickerGallery } from "./Galleries";
 import { useStudio } from "@/lib/store";
 import { useTheme } from "@/lib/useTheme";
@@ -660,6 +662,8 @@ export function Studio() {
       )}
 
       <ImageImporter open={panel === "import"} onClose={() => setPanel(null)} />
+      <MoldImporter open={panel === "mold"} onClose={() => setPanel(null)} />
+
       <StickerGallery open={panel === "holo"} onClose={() => setPanel(null)} kind="holo" />
       <StickerGallery open={panel === "paper"} onClose={() => setPanel(null)} kind="paper" />
       <FontGallery open={panel === "fonts"} onClose={() => setPanel(null)} />
