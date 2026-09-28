@@ -99,11 +99,58 @@ async function drawStickerContent(
   }
 }
 
+export type ShellStyle = { color: string; opacity: number };
+
+/** paint a silhouette in one flat colour */
+function tintedMask(img: HTMLImageElement, w: number, h: number, color: string, alpha: number) {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w));
+  c.height = Math.max(1, Math.round(h));
+  const g = c.getContext("2d")!;
+  g.drawImage(img, 0, 0, c.width, c.height);
+  g.globalCompositeOperation = "source-in";
+  g.globalAlpha = alpha;
+  g.fillStyle = color;
+  g.fillRect(0, 0, c.width, c.height);
+  return c;
+}
+
+/**
+ * Draw a traced silhouette as if it were molded into the plastic shell:
+ * a bevel pair (shadow + highlight) offset along the light direction plus a
+ * body fill that follows the disc colour.
+ */
+function drawMold(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  o: LabelObject,
+  width: number,
+  height: number,
+  shell: ShellStyle,
+) {
+  const x = -width / 2;
+  const y = -height / 2;
+  const depth = o.moldDepth ?? 0.5;
+  const d = Math.max(1, Math.min(width, height) * 0.02 * (0.35 + depth));
+  const raised = o.mold === "emboss";
+  // key light sits top-left
+  const hi = raised ? -d : d;
+  const sh = raised ? d : -d;
+
+  const fill = o.moldFill ?? "shell";
+  const bodyColor = fill === "custom" ? o.moldColor ?? shell.color : shell.color;
+  const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + shell.opacity * 0.45);
+
+  ctx.drawImage(tintedMask(img, width, height, "#05070a", 0.55 * (0.5 + depth)), x + sh, y + sh, width, height);
+  ctx.drawImage(tintedMask(img, width, height, "#ffffff", 0.6 * (0.5 + depth)), x + hi, y + hi, width, height);
+  ctx.drawImage(tintedMask(img, width, height, bodyColor, bodyAlpha), x, y, width, height);
+}
+
 export type LabelFilter = "all" | "holo" | "base";
 
 function matches(o: LabelObject, filter: LabelFilter) {
   if (filter === "all") return true;
-  const isHolo = o.type === "image" && o.stickerKind === "holo";
+  const isHolo = o.type === "image" && o.stickerKind === "holo" && !o.mold;
   return filter === "holo" ? isHolo : !isHolo;
 }
 
@@ -111,6 +158,7 @@ export async function renderLabel(
   objects: LabelObject[],
   size = 1024,
   filter: LabelFilter = "all",
+  shell: ShellStyle = { color: "#2f6fd0", opacity: 0.55 },
 ): Promise<HTMLCanvasElement> {
   const w = size;
   const h = Math.round(size / LABEL_ASPECT);
@@ -131,8 +179,12 @@ export async function renderLabel(
         const img = await loadImage(o.src);
         const iw = o.w * w;
         const ih = iw / (o.aspect || img.width / img.height || 1);
-        drawStyledImage(ctx, img, o, iw, ih);
-        await drawStickerContent(ctx, o, iw, ih);
+        if (o.mold) {
+          drawMold(ctx, img, o, iw, ih, shell);
+        } else {
+          drawStyledImage(ctx, img, o, iw, ih);
+          await drawStickerContent(ctx, o, iw, ih);
+        }
       } catch {
         /* skip */
       }
@@ -161,3 +213,4 @@ export async function renderLabel(
   }
   return canvas;
 }
+
