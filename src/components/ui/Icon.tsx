@@ -28,8 +28,11 @@ import {
   Link as LinkIcon,
   Upload,
   FlipHorizontal,
+  Maximize2,
+  Stamp,
   type LucideIcon,
 } from "lucide-react";
+
 
 export const icons = {
   text: Type,

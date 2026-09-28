@@ -166,10 +166,15 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
   const { object, frontSurface, backSurface, faceW, faceH } = useMemo(() => normalize(gltf.scene), [gltf.scene]);
 
-  const frontTex = useLabelTexture(design.front, 1024, "base");
-  const backTex = useLabelTexture(design.back, 1024, "base");
-  const frontHoloTex = useLabelTexture(design.front, 1024, "holo");
-  const backHoloTex = useLabelTexture(design.back, 1024, "holo");
+  const shell = useMemo(
+    () => ({ color: design.color, opacity: design.opacity }),
+    [design.color, design.opacity],
+  );
+  const frontTex = useLabelTexture(design.front, 1024, "base", shell);
+  const backTex = useLabelTexture(design.back, 1024, "base", shell);
+  const frontHoloTex = useLabelTexture(design.front, 1024, "holo", shell);
+  const backHoloTex = useLabelTexture(design.back, 1024, "holo", shell);
+
 
   const material = useMemo(
     () =>
