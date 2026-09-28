@@ -12,7 +12,7 @@ import { renderLabel } from "@/lib/labelCanvas";
 import { defaultAlignment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type Panel = "holo" | "paper" | "fonts" | "designs" | "models" | "import" | "links" | null;
+type Panel = "holo" | "paper" | "fonts" | "designs" | "models" | "import" | "links" | "mold" | null;
 type Mode = "design" | "view" | "align";
 
 export function Studio() {
