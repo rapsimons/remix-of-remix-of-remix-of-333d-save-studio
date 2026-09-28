@@ -20,7 +20,10 @@ type Props = {
   lockY: boolean;
   onDoubleTap?: (() => void) | undefined;
   interactive?: boolean | undefined;
+  /** enable pinch / wheel zoom (used by the full-screen viewer) */
+  allowZoom?: boolean | undefined;
 };
+
 
 function dominantNormal(root: THREE.Object3D): THREE.Vector3 {
   // bin face normals by direction, weighted by triangle area; the largest bin
