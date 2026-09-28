@@ -13,7 +13,47 @@ type Gesture =
   | { kind: "rotate"; id: string; cx: number; cy: number; startAngle: number; startRot: number }
   | { kind: "pinch"; id: string; startDist: number; startW: number; startAngle: number; startRot: number };
 
+/** Traced artwork shown as if molded into the plastic shell. */
+function MoldPreview({
+  object: o,
+  shellColor,
+  shellOpacity,
+}: {
+  object: LabelObject;
+  shellColor: string;
+  shellOpacity: number;
+}) {
+  const depth = o.moldDepth ?? 0.5;
+  const off = 2 * (0.35 + depth);
+  const raised = o.mold === "emboss";
+  const hi = raised ? -off : off;
+  const sh = raised ? off : -off;
+  const fill = o.moldFill ?? "shell";
+  const body = fill === "custom" ? o.moldColor ?? shellColor : shellColor;
+  const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + shellOpacity * 0.45);
+  const mask = {
+    WebkitMaskImage: `url("${o.src}")`,
+    maskImage: `url("${o.src}")`,
+    WebkitMaskSize: "100% 100%",
+    maskSize: "100% 100%",
+  } as const;
+  const layer = (color: string, alpha: number, d: number) => (
+    <span
+      className="pointer-events-none absolute inset-0"
+      style={{ ...mask, background: color, opacity: alpha, transform: `translate(${d}%, ${d}%)` }}
+    />
+  );
+  return (
+    <div className="pointer-events-none relative w-full" style={{ paddingTop: `${100 / (o.aspect || 1)}%` }}>
+      {layer("#05070a", 0.55 * (0.5 + depth), sh)}
+      {layer("#ffffff", 0.6 * (0.5 + depth), hi)}
+      {layer(body, bodyAlpha, 0)}
+    </div>
+  );
+}
+
 export function Editor2D() {
+
   const { design, side, selectedId } = useStudio();
   const select = useStudio((s) => s.select);
   const updateObject = useStudio((s) => s.updateObject);
