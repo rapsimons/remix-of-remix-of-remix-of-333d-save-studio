@@ -140,7 +140,7 @@ export function MoldImporter({ open, onClose }: { open: boolean; onClose: () => 
             onChange={(v) => set({ simplify: v })}
           />
           <Slider label="Detail" min={100} max={480} step={20} value={settings.detail} onChange={(v) => set({ detail: v })} />
-          <Toggle label="Invert" checked={settings.invert} onChange={(v) => set({ invert: v })} />
+          <Toggle label="Invert" on={settings.invert} onChange={(v) => set({ invert: v })} />
           <div className="grid grid-cols-2 gap-1">
             <Btn icon="upload" label="Replace" onClick={() => fileRef.current?.click()} />
             <Btn icon="check" label="Place" onClick={place} disabled={!traced} />
