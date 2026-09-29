@@ -3,7 +3,7 @@ import { Environment, Lightformer, useGLTF } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Design } from "@/lib/types";
-import { useLabelTexture } from "@/lib/useLabelTextures";
+import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
 import {
   createHoloMaterial,
@@ -179,6 +179,55 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   const backTex = useLabelTexture(design.back, 1024, "base", shell);
   const frontHoloTex = useLabelTexture(design.front, 1024, "holo", shell);
   const backHoloTex = useLabelTexture(design.back, 1024, "holo", shell);
+  const frontMold = useMoldTextures(design.front, 1024);
+  const backMold = useMoldTextures(design.back, 1024);
+
+  // molded artwork is the same plastic as the shell — only the bevel walls
+  // catch light, so the shape reads as formed rather than printed
+  const moldStyle = useMemo(() => {
+    const objs = [...design.front, ...design.back].filter((o) => o.mold);
+    const fill = objs[0]?.moldFill ?? "shell";
+    const custom = objs[0]?.moldColor;
+    const color = fill === "custom" && custom ? custom : design.color;
+    const opacity = fill === "clear" ? 0.35 : fill === "custom" ? 0.9 : Math.min(1, 0.45 + design.opacity * 0.5);
+    return { color, opacity };
+  }, [design.front, design.back, design.color, design.opacity]);
+
+  const makeMoldMaterial = (m: { normal: THREE.Texture; alpha: THREE.Texture } | null) =>
+    m
+      ? new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color(moldStyle.color),
+          roughness: Math.max(0.04, design.roughness * 0.5),
+          metalness: 0,
+          transmission: 0.85,
+          thickness: 0.25,
+          ior: 1.45,
+          clearcoat: 1,
+          clearcoatRoughness: 0.04,
+          normalMap: m.normal,
+          normalScale: new THREE.Vector2(1.6, 1.6),
+          alphaMap: m.alpha,
+          transparent: true,
+          opacity: moldStyle.opacity,
+          envMapIntensity: 1.8,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+        })
+      : null;
+
+  const frontMoldMat = useMemo(
+    () => makeMoldMaterial(frontMold),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [frontMold, moldStyle.color, moldStyle.opacity, design.roughness],
+  );
+  const backMoldMat = useMemo(
+    () => makeMoldMaterial(backMold),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [backMold, moldStyle.color, moldStyle.opacity, design.roughness],
+  );
+
 
 
   const material = useMemo(
@@ -433,6 +482,25 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             rotation={[0, Math.PI, 0]}
             material={backHoloMat}
             renderOrder={20}
+          >
+            <planeGeometry args={[faceW, faceH]} />
+          </mesh>
+        )}
+        {frontMoldMat && (
+          <mesh
+            position={[0, 0, frontSurface + surfaceGap * 0.5]}
+            material={frontMoldMat}
+            renderOrder={12}
+          >
+            <planeGeometry args={[faceW, faceH]} />
+          </mesh>
+        )}
+        {backMoldMat && (
+          <mesh
+            position={[0, 0, backSurface - surfaceGap * 0.5]}
+            rotation={[0, Math.PI, 0]}
+            material={backMoldMat}
+            renderOrder={12}
           >
             <planeGeometry args={[faceW, faceH]} />
           </mesh>

@@ -30,7 +30,7 @@ function MoldPreview({
   const sh = raised ? off : -off;
   const fill = o.moldFill ?? "shell";
   const body = fill === "custom" ? o.moldColor ?? shellColor : shellColor;
-  const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + shellOpacity * 0.45);
+  const bodyAlpha = fill === "clear" ? 0.03 : fill === "custom" ? 0.5 : Math.min(0.16, 0.05 + shellOpacity * 0.14);
   const mask = {
     WebkitMaskImage: `url("${o.src}")`,
     maskImage: `url("${o.src}")`,
@@ -70,7 +70,7 @@ function MoldTextPreview({
   const sh = raised ? d : -d;
   const fill = o.moldFill ?? "shell";
   const body = fill === "custom" ? o.moldColor ?? shellColor : shellColor;
-  const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + shellOpacity * 0.45);
+  const bodyAlpha = fill === "clear" ? 0.03 : fill === "custom" ? 0.5 : Math.min(0.16, 0.05 + shellOpacity * 0.14);
   const base: React.CSSProperties = {
     fontFamily: o.fontFamily ? `"${o.fontFamily}", monospace` : "var(--font-mono)",
     fontSize: `${size}cqh`,
