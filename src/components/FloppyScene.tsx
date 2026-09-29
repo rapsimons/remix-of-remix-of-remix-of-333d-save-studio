@@ -3,7 +3,7 @@ import { Environment, Lightformer, useGLTF } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Design } from "@/lib/types";
-import { useLabelTexture } from "@/lib/useLabelTextures";
+import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
 import {
   createHoloMaterial,
