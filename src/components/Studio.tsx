@@ -208,6 +208,25 @@ export function Studio() {
                         onChange={(e) => store.updateObject(selected.id, { color: e.target.value }, false)}
                       />
                     </Field>
+                    <div className="grid grid-cols-3 gap-1" aria-label="Text finish">
+                      <Btn
+                        label="Print"
+                        active={!selected.mold}
+                        onClick={() => store.updateObject(selected.id, { mold: undefined })}
+                      />
+                      <Btn
+                        icon="mold"
+                        label="Deboss"
+                        active={selected.mold === "deboss"}
+                        onClick={() => store.updateObject(selected.id, { mold: "deboss" })}
+                      />
+                      <Btn
+                        icon="mold"
+                        label="Emboss"
+                        active={selected.mold === "emboss"}
+                        onClick={() => store.updateObject(selected.id, { mold: "emboss" })}
+                      />
+                    </div>
                   </>
                 )}
                 {selected.type === "image" && selected.stickerKind === "paper" && (
@@ -260,22 +279,24 @@ export function Studio() {
                     )}
                   </div>
                 )}
-                {selected.type === "image" && selected.mold && (
+                {selected.mold && (
                   <div className="space-y-2 border-t border-hairline pt-2">
-                    <div className="grid grid-cols-2 gap-1">
-                      <Btn
-                        icon="mold"
-                        label="Deboss"
-                        active={selected.mold === "deboss"}
-                        onClick={() => store.updateObject(selected.id, { mold: "deboss" })}
-                      />
-                      <Btn
-                        icon="mold"
-                        label="Emboss"
-                        active={selected.mold === "emboss"}
-                        onClick={() => store.updateObject(selected.id, { mold: "emboss" })}
-                      />
-                    </div>
+                    {selected.type === "image" && (
+                      <div className="grid grid-cols-2 gap-1">
+                        <Btn
+                          icon="mold"
+                          label="Deboss"
+                          active={selected.mold === "deboss"}
+                          onClick={() => store.updateObject(selected.id, { mold: "deboss" })}
+                        />
+                        <Btn
+                          icon="mold"
+                          label="Emboss"
+                          active={selected.mold === "emboss"}
+                          onClick={() => store.updateObject(selected.id, { mold: "emboss" })}
+                        />
+                      </div>
+                    )}
                     <div className="grid grid-cols-3 gap-1">
                       {(["shell", "clear", "custom"] as const).map((f) => (
                         <Btn

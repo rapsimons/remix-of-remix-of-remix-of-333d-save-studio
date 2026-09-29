@@ -8,6 +8,12 @@ import { defaultTrace, traceImage, type TraceResult, type TraceSettings } from "
 export function MoldImporter({ open, onClose }: { open: boolean; onClose: () => void }) {
   const addObject = useStudio((s) => s.addObject);
   const design = useStudio((s) => s.design);
+  const fonts = useStudio((s) => s.fonts);
+  const [kind, setKind] = useState<"image" | "text">("image");
+  const [text, setText] = useState("ARCHIVE");
+  const [fontFamily, setFontFamily] = useState("");
+  const [fontSize, setFontSize] = useState(0.1);
+  const [tracking, setTracking] = useState(0.05);
   const [source, setSource] = useState<HTMLImageElement | null>(null);
   const [settings, setSettings] = useState<TraceSettings>(defaultTrace);
   const [mold, setMold] = useState<"deboss" | "emboss">("deboss");
@@ -37,6 +43,28 @@ export function MoldImporter({ open, onClose }: { open: boolean; onClose: () => 
   }
 
   function place() {
+    if (kind === "text") {
+      if (!text.trim()) return;
+      addObject({
+        type: "text",
+        x: 0.5,
+        y: 0.5,
+        w: 0.5,
+        rot: 0,
+        opacity: 1,
+        text,
+        fontFamily,
+        fontSize,
+        tracking,
+        color: design.color,
+        mold,
+        moldFill: fill,
+        moldColor: color,
+        moldDepth: depth,
+      });
+      onClose();
+      return;
+    }
     if (!traced) return;
     addObject({
       type: "image",
@@ -60,6 +88,13 @@ export function MoldImporter({ open, onClose }: { open: boolean; onClose: () => 
   const raised = mold === "emboss";
   const bodyColor = fill === "custom" ? color : design.color;
   const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + design.opacity * 0.45);
+  const textOff = Math.max(0.5, fontSize * 100 * 0.05 * (0.35 + depth));
+  const layers = [
+    { c: "#05070a", a: 0.55 * (0.5 + depth), d: raised ? off : -off, t: raised ? textOff : -textOff },
+    { c: "#ffffff", a: 0.6 * (0.5 + depth), d: raised ? -off : off, t: raised ? -textOff : textOff },
+    { c: bodyColor, a: bodyAlpha, d: 0, t: 0 },
+  ];
+  const ready = kind === "text" ? text.trim().length > 0 : !!traced;
 
   return (
     <Modal open={open} onClose={onClose} title="Mold into plastic" wide>
@@ -70,38 +105,87 @@ export function MoldImporter({ open, onClose }: { open: boolean; onClose: () => 
         hidden
         onChange={(e) => e.target.files?.[0] && void pickFile(e.target.files[0])}
       />
-      {!source ? (
+      <div className="mb-3 grid grid-cols-2 gap-1">
+        <Btn icon="image" label="Image" active={kind === "image"} onClick={() => setKind("image")} />
+        <Btn icon="text" label="Text" active={kind === "text"} onClick={() => setKind("text")} />
+      </div>
+      {kind === "image" && !source ? (
         <Btn icon="upload" label="Choose image" className="w-full py-8" onClick={() => fileRef.current?.click()} />
       ) : (
         <div className="space-y-3">
           <div
-            className="relative flex aspect-square w-full items-center justify-center border border-hairline"
+            className="relative flex aspect-square w-full items-center justify-center overflow-hidden border border-hairline"
             style={{ background: design.color }}
           >
-            {preview && (
-              <div className="relative w-2/3" style={{ paddingTop: `${(2 / 3) * 100 / (traced?.aspect || 1)}%` }}>
-                {[
-                  { c: "#05070a", a: 0.55 * (0.5 + depth), d: raised ? off : -off },
-                  { c: "#ffffff", a: 0.6 * (0.5 + depth), d: raised ? -off : off },
-                  { c: bodyColor, a: bodyAlpha, d: 0 },
-                ].map((l, i) => (
+            {kind === "text" ? (
+              <span className="relative block whitespace-pre">
+                {layers.map((l, i) => (
                   <span
                     key={i}
-                    className="absolute inset-0"
+                    className={i === 0 ? "block whitespace-pre" : "absolute inset-0 block whitespace-pre"}
                     style={{
-                      WebkitMaskImage: `url("${preview}")`,
-                      maskImage: `url("${preview}")`,
-                      WebkitMaskSize: "100% 100%",
-                      maskSize: "100% 100%",
-                      background: l.c,
+                      fontFamily: fontFamily ? `"${fontFamily}", monospace` : "var(--font-mono)",
+                      fontSize: `${fontSize * 340}px`,
+                      letterSpacing: `${tracking * 100}%`,
+                      color: l.c,
                       opacity: l.a,
-                      transform: `translate(${l.d}%, ${l.d}%)`,
+                      transform: `translate(${l.t}px, ${l.t}px)`,
                     }}
-                  />
+                  >
+                    {text}
+                  </span>
                 ))}
-              </div>
+              </span>
+            ) : (
+              preview && (
+                <div className="relative w-2/3" style={{ paddingTop: `${(2 / 3) * 100 / (traced?.aspect || 1)}%` }}>
+                  {layers.map((l, i) => (
+                    <span
+                      key={i}
+                      className="absolute inset-0"
+                      style={{
+                        WebkitMaskImage: `url("${preview}")`,
+                        maskImage: `url("${preview}")`,
+                        WebkitMaskSize: "100% 100%",
+                        maskSize: "100% 100%",
+                        background: l.c,
+                        opacity: l.a,
+                        transform: `translate(${l.d}%, ${l.d}%)`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )
             )}
           </div>
+
+          {kind === "text" && (
+            <>
+              <Field label="Text">
+                <input
+                  className="h-8 w-full border border-hairline bg-background px-2 text-sm"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                />
+              </Field>
+              <Field label="Font">
+                <select
+                  className="h-8 w-full border border-hairline bg-background px-2 text-sm"
+                  value={fontFamily}
+                  onChange={(e) => setFontFamily(e.target.value)}
+                >
+                  <option value="">Default</option>
+                  {fonts.map((f) => (
+                    <option key={f.id} value={f.family}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Slider label="Size" min={0.02} max={0.4} step={0.005} value={fontSize} onChange={setFontSize} />
+              <Slider label="Tracking" min={-0.1} max={0.6} step={0.01} value={tracking} onChange={setTracking} />
+            </>
+          )}
 
           <div className="grid grid-cols-2 gap-1">
             <Btn icon="mold" label="Deboss" active={mold === "deboss"} onClick={() => setMold("deboss")} />
@@ -123,27 +207,42 @@ export function MoldImporter({ open, onClose }: { open: boolean; onClose: () => 
             </Field>
           )}
           <Slider label="Depth" min={0} max={1} step={0.05} value={depth} onChange={setDepth} />
-          <Slider
-            label="Threshold"
-            min={0.05}
-            max={0.95}
-            step={0.01}
-            value={settings.threshold}
-            onChange={(v) => set({ threshold: v })}
-          />
-          <Slider
-            label="Smoothing"
-            min={0}
-            max={4}
-            step={0.25}
-            value={settings.simplify}
-            onChange={(v) => set({ simplify: v })}
-          />
-          <Slider label="Detail" min={100} max={480} step={20} value={settings.detail} onChange={(v) => set({ detail: v })} />
-          <Toggle label="Invert" on={settings.invert} onChange={(v) => set({ invert: v })} />
+          {kind === "image" && (
+            <>
+              <Slider
+                label="Threshold"
+                min={0.05}
+                max={0.95}
+                step={0.01}
+                value={settings.threshold}
+                onChange={(v) => set({ threshold: v })}
+              />
+              <Slider
+                label="Smoothing"
+                min={0}
+                max={4}
+                step={0.25}
+                value={settings.simplify}
+                onChange={(v) => set({ simplify: v })}
+              />
+              <Slider
+                label="Detail"
+                min={100}
+                max={480}
+                step={20}
+                value={settings.detail}
+                onChange={(v) => set({ detail: v })}
+              />
+              <Toggle label="Invert" on={settings.invert} onChange={(v) => set({ invert: v })} />
+            </>
+          )}
           <div className="grid grid-cols-2 gap-1">
-            <Btn icon="upload" label="Replace" onClick={() => fileRef.current?.click()} />
-            <Btn icon="check" label="Place" onClick={place} disabled={!traced} />
+            {kind === "image" ? (
+              <Btn icon="upload" label="Replace" onClick={() => fileRef.current?.click()} />
+            ) : (
+              <Btn icon="close" label="Cancel" onClick={onClose} />
+            )}
+            <Btn icon="check" label="Place" onClick={place} disabled={!ready} />
           </div>
         </div>
       )}

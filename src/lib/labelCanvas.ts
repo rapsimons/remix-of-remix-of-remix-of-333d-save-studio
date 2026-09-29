@@ -102,7 +102,7 @@ async function drawStickerContent(
 export type ShellStyle = { color: string; opacity: number };
 
 /** paint a silhouette in one flat colour */
-function tintedMask(img: HTMLImageElement, w: number, h: number, color: string, alpha: number) {
+function tintedMask(img: CanvasImageSource, w: number, h: number, color: string, alpha: number) {
   const c = document.createElement("canvas");
   c.width = Math.max(1, Math.round(w));
   c.height = Math.max(1, Math.round(h));
@@ -122,7 +122,7 @@ function tintedMask(img: HTMLImageElement, w: number, h: number, color: string, 
  */
 function drawMold(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: CanvasImageSource,
   o: LabelObject,
   width: number,
   height: number,
@@ -144,6 +144,57 @@ function drawMold(
   ctx.drawImage(tintedMask(img, width, height, "#05070a", 0.55 * (0.5 + depth)), x + sh, y + sh, width, height);
   ctx.drawImage(tintedMask(img, width, height, "#ffffff", 0.6 * (0.5 + depth)), x + hi, y + hi, width, height);
   ctx.drawImage(tintedMask(img, width, height, bodyColor, bodyAlpha), x, y, width, height);
+}
+
+/** draw one pass of an object's text at an offset in a flat colour */
+function paintText(
+  ctx: CanvasRenderingContext2D,
+  o: LabelObject,
+  h: number,
+  color: string,
+  alpha: number,
+  dx: number,
+  dy: number,
+) {
+  const text = o.text ?? "";
+  const fs = (o.fontSize ?? 0.08) * h;
+  ctx.save();
+  ctx.globalAlpha = (ctx.globalAlpha || 1) * alpha;
+  ctx.font = `${fs}px ${o.fontFamily ? `"${o.fontFamily}", ` : ""}ui-monospace, monospace`;
+  ctx.fillStyle = color;
+  ctx.textBaseline = "middle";
+  const tracking = (o.tracking ?? 0) * fs;
+  if (tracking) {
+    const chars = [...text];
+    const widths = chars.map((c) => ctx.measureText(c).width + tracking);
+    const total = widths.reduce((a, b) => a + b, 0) - tracking;
+    let x = -total / 2 + dx;
+    ctx.textAlign = "left";
+    chars.forEach((c, i) => {
+      ctx.fillText(c, x, dy);
+      x += widths[i] ?? 0;
+    });
+  } else {
+    ctx.textAlign = "center";
+    ctx.fillText(text, dx, dy);
+  }
+  ctx.restore();
+}
+
+/** draw text as if molded into the plastic shell */
+function drawMoldedText(ctx: CanvasRenderingContext2D, o: LabelObject, h: number, shell: ShellStyle) {
+  const depth = o.moldDepth ?? 0.5;
+  const fs = (o.fontSize ?? 0.08) * h;
+  const d = Math.max(1, fs * 0.05 * (0.35 + depth));
+  const raised = o.mold === "emboss";
+  const hi = raised ? -d : d;
+  const sh = raised ? d : -d;
+  const fill = o.moldFill ?? "shell";
+  const bodyColor = fill === "custom" ? o.moldColor ?? shell.color : shell.color;
+  const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + shell.opacity * 0.45);
+  paintText(ctx, o, h, "#05070a", 0.55 * (0.5 + depth), sh, sh);
+  paintText(ctx, o, h, "#ffffff", 0.6 * (0.5 + depth), hi, hi);
+  paintText(ctx, o, h, bodyColor, bodyAlpha, 0, 0);
 }
 
 export type LabelFilter = "all" | "holo" | "base";
@@ -189,24 +240,10 @@ export async function renderLabel(
         /* skip */
       }
     } else if (o.type === "text" && o.text) {
-      const fs = (o.fontSize ?? 0.08) * h;
-      ctx.font = `${fs}px ${o.fontFamily ? `"${o.fontFamily}", ` : ""}ui-monospace, monospace`;
-      ctx.fillStyle = o.color || "#111111";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const tracking = (o.tracking ?? 0) * fs;
-      if (tracking) {
-        const chars = [...o.text];
-        const widths = chars.map((c) => ctx.measureText(c).width + tracking);
-        const total = widths.reduce((a, b) => a + b, 0) - tracking;
-        let x = -total / 2;
-        ctx.textAlign = "left";
-        chars.forEach((c, i) => {
-          ctx.fillText(c, x, 0);
-          x += widths[i] ?? 0;
-        });
+      if (o.mold) {
+        drawMoldedText(ctx, o, h, shell);
       } else {
-        ctx.fillText(o.text, 0, 0);
+        paintText(ctx, o, h, o.color || "#111111", 1, 0, 0);
       }
     }
     ctx.restore();

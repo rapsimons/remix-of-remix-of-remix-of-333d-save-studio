@@ -37,7 +37,7 @@ export type LabelObject = {
   labelImage?: string;
   labelImageScale?: number;
   /** molded-into-the-plastic artwork (traced silhouette) */
-  mold?: "deboss" | "emboss";
+  mold?: "deboss" | "emboss" | undefined;
   /** where the molded shape takes its colour from */
   moldFill?: "shell" | "clear" | "custom";
   moldColor?: string;
