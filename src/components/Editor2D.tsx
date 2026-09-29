@@ -270,6 +270,8 @@ export function Editor2D() {
                     </span>
                   )}
                 </div>
+              ) : o.mold ? (
+                <MoldTextPreview object={o} shellColor={design.color} shellOpacity={design.opacity} />
               ) : (
                 <span
                   className="pointer-events-none block whitespace-pre"
