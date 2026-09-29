@@ -102,7 +102,7 @@ async function drawStickerContent(
 export type ShellStyle = { color: string; opacity: number };
 
 /** paint a silhouette in one flat colour */
-function tintedMask(img: HTMLImageElement, w: number, h: number, color: string, alpha: number) {
+function tintedMask(img: CanvasImageSource, w: number, h: number, color: string, alpha: number) {
   const c = document.createElement("canvas");
   c.width = Math.max(1, Math.round(w));
   c.height = Math.max(1, Math.round(h));
@@ -122,7 +122,7 @@ function tintedMask(img: HTMLImageElement, w: number, h: number, color: string, 
  */
 function drawMold(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: CanvasImageSource,
   o: LabelObject,
   width: number,
   height: number,
