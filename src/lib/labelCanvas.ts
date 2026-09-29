@@ -240,24 +240,10 @@ export async function renderLabel(
         /* skip */
       }
     } else if (o.type === "text" && o.text) {
-      const fs = (o.fontSize ?? 0.08) * h;
-      ctx.font = `${fs}px ${o.fontFamily ? `"${o.fontFamily}", ` : ""}ui-monospace, monospace`;
-      ctx.fillStyle = o.color || "#111111";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const tracking = (o.tracking ?? 0) * fs;
-      if (tracking) {
-        const chars = [...o.text];
-        const widths = chars.map((c) => ctx.measureText(c).width + tracking);
-        const total = widths.reduce((a, b) => a + b, 0) - tracking;
-        let x = -total / 2;
-        ctx.textAlign = "left";
-        chars.forEach((c, i) => {
-          ctx.fillText(c, x, 0);
-          x += widths[i] ?? 0;
-        });
+      if (o.mold) {
+        drawMoldedText(ctx, o, h, shell);
       } else {
-        ctx.fillText(o.text, 0, 0);
+        paintText(ctx, o, h, o.color || "#111111", 1, 0, 0);
       }
     }
     ctx.restore();
