@@ -87,7 +87,7 @@ export function MoldImporter({ open, onClose }: { open: boolean; onClose: () => 
   const off = 2 * (0.35 + depth);
   const raised = mold === "emboss";
   const bodyColor = fill === "custom" ? color : design.color;
-  const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + design.opacity * 0.45);
+  const bodyAlpha = fill === "clear" ? 0.03 : fill === "custom" ? 0.5 : Math.min(0.16, 0.05 + design.opacity * 0.14);
   const textOff = Math.max(0.5, fontSize * 100 * 0.05 * (0.35 + depth));
   const layers = [
     { c: "#05070a", a: 0.55 * (0.5 + depth), d: raised ? off : -off, t: raised ? textOff : -textOff },
