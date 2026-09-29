@@ -486,6 +486,25 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             <planeGeometry args={[faceW, faceH]} />
           </mesh>
         )}
+        {frontMoldMat && (
+          <mesh
+            position={[0, 0, frontSurface + surfaceGap * 0.5]}
+            material={frontMoldMat}
+            renderOrder={12}
+          >
+            <planeGeometry args={[faceW, faceH]} />
+          </mesh>
+        )}
+        {backMoldMat && (
+          <mesh
+            position={[0, 0, backSurface - surfaceGap * 0.5]}
+            rotation={[0, Math.PI, 0]}
+            material={backMoldMat}
+            renderOrder={12}
+          >
+            <planeGeometry args={[faceW, faceH]} />
+          </mesh>
+        )}
       </group>
     </group>
   );
