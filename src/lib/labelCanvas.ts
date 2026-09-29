@@ -193,19 +193,113 @@ function drawMoldedText(ctx: CanvasRenderingContext2D, o: LabelObject, h: number
   const sh = raised ? d : -d;
   const fill = o.moldFill ?? "shell";
   const bodyColor = fill === "custom" ? o.moldColor ?? shell.color : shell.color;
-  const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + shell.opacity * 0.45);
+  const bodyAlpha = fill === "clear" ? 0.03 : fill === "custom" ? 0.5 : Math.min(0.16, 0.05 + shell.opacity * 0.14);
   paintText(ctx, o, h, "#05070a", 0.55 * (0.5 + depth), sh, sh);
   paintText(ctx, o, h, "#ffffff", 0.6 * (0.5 + depth), hi, hi);
   paintText(ctx, o, h, bodyColor, bodyAlpha, 0, 0);
 }
 
-export type LabelFilter = "all" | "holo" | "base";
+export type LabelFilter = "all" | "holo" | "base" | "mold";
 
 function matches(o: LabelObject, filter: LabelFilter) {
   if (filter === "all") return true;
-  const isHolo = o.type === "image" && o.stickerKind === "holo" && !o.mold;
+  const isMold = !!o.mold;
+  if (filter === "mold") return isMold;
+  if (isMold) return false;
+  const isHolo = o.type === "image" && o.stickerKind === "holo";
   return filter === "holo" ? isHolo : !isHolo;
 }
+
+/**
+ * Build the depth maps for everything molded into the shell.
+ * Returns a tangent-space normal map (the bevel walls) plus a mask whose
+ * strength follows the slope, so flat areas stay fully clear plastic.
+ */
+export async function renderMoldMaps(
+  objects: LabelObject[],
+  size = 1024,
+): Promise<{ normal: HTMLCanvasElement; alpha: HTMLCanvasElement } | null> {
+  const w = size;
+  const h = Math.round(size / LABEL_ASPECT);
+  const height = document.createElement("canvas");
+  height.width = w;
+  height.height = h;
+  const g = height.getContext("2d")!;
+  g.fillStyle = "#808080";
+  g.fillRect(0, 0, w, h);
+
+  let any = false;
+  for (const o of objects) {
+    if (!o.mold) continue;
+    const depth = o.moldDepth ?? 0.5;
+    const blur = Math.max(1, size * 0.0035 * (0.4 + depth));
+    const tone = o.mold === "emboss" ? "#ffffff" : "#000000";
+    g.save();
+    g.translate(o.x * w, o.y * h);
+    g.rotate(((o.rot || 0) * Math.PI) / 180);
+    g.filter = `blur(${blur}px)`;
+    if (o.type === "image" && o.src) {
+      try {
+        const img = await loadImage(o.src);
+        const iw = o.w * w;
+        const ih = iw / (o.aspect || img.width / img.height || 1);
+        g.drawImage(tintedMask(img, iw, ih, tone, 1), -iw / 2, -ih / 2, iw, ih);
+        any = true;
+      } catch {
+        /* skip */
+      }
+    } else if (o.type === "text" && o.text) {
+      paintText(g, o, h, tone, 1, 0, 0);
+      any = true;
+    }
+    g.restore();
+  }
+  if (!any) return null;
+
+  const src = g.getImageData(0, 0, w, h).data;
+  const normal = document.createElement("canvas");
+  normal.width = w;
+  normal.height = h;
+  const alpha = document.createElement("canvas");
+  alpha.width = w;
+  alpha.height = h;
+  const nCtx = normal.getContext("2d")!;
+  const aCtx = alpha.getContext("2d")!;
+  const nImg = nCtx.createImageData(w, h);
+  const aImg = aCtx.createImageData(w, h);
+  const at = (x: number, y: number) => {
+    const cx = x < 0 ? 0 : x >= w ? w - 1 : x;
+    const cy = y < 0 ? 0 : y >= h ? h - 1 : y;
+    return src[(cy * w + cx) * 4]! / 255;
+  };
+  const strength = 6;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      const gx = at(x + 1, y) - at(x - 1, y);
+      const gy = at(x, y + 1) - at(x, y - 1);
+      const nx = -gx * strength;
+      const ny = gy * strength;
+      const len = Math.hypot(nx, ny, 1);
+      nImg.data[i] = ((nx / len) * 0.5 + 0.5) * 255;
+      nImg.data[i + 1] = ((ny / len) * 0.5 + 0.5) * 255;
+      nImg.data[i + 2] = ((1 / len) * 0.5 + 0.5) * 255;
+      nImg.data[i + 3] = 255;
+      const slope = Math.min(1, Math.hypot(gx, gy) * 10);
+      const inside = Math.min(1, Math.abs(at(x, y) - 0.5) * 2);
+      const a = Math.min(1, slope * 0.95 + inside * 0.12);
+      nImg.data[i + 3] = 255;
+      aImg.data[i] = a * 255;
+      aImg.data[i + 1] = a * 255;
+      aImg.data[i + 2] = a * 255;
+      aImg.data[i + 3] = 255;
+    }
+  }
+  nCtx.putImageData(nImg, 0, 0);
+  aCtx.putImageData(aImg, 0, 0);
+  return { normal, alpha };
+}
+
 
 export async function renderLabel(
   objects: LabelObject[],
