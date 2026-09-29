@@ -139,11 +139,13 @@ function drawMold(
 
   const fill = o.moldFill ?? "shell";
   const bodyColor = fill === "custom" ? o.moldColor ?? shell.color : shell.color;
-  const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + shell.opacity * 0.45);
+  // the plastic itself stays clear — only the bevel walls catch light
+  const bodyAlpha = fill === "clear" ? 0.03 : fill === "custom" ? 0.5 : Math.min(0.16, 0.05 + shell.opacity * 0.14);
 
   ctx.drawImage(tintedMask(img, width, height, "#05070a", 0.55 * (0.5 + depth)), x + sh, y + sh, width, height);
   ctx.drawImage(tintedMask(img, width, height, "#ffffff", 0.6 * (0.5 + depth)), x + hi, y + hi, width, height);
   ctx.drawImage(tintedMask(img, width, height, bodyColor, bodyAlpha), x, y, width, height);
+
 }
 
 /** draw one pass of an object's text at an offset in a flat colour */
