@@ -52,6 +52,53 @@ function MoldPreview({
   );
 }
 
+/** Text shown as if molded into the plastic shell. */
+function MoldTextPreview({
+  object: o,
+  shellColor,
+  shellOpacity,
+}: {
+  object: LabelObject;
+  shellColor: string;
+  shellOpacity: number;
+}) {
+  const depth = o.moldDepth ?? 0.5;
+  const raised = o.mold === "emboss";
+  const size = (o.fontSize ?? 0.08) * 100;
+  const d = Math.max(0.5, size * 0.05 * (0.35 + depth));
+  const hi = raised ? -d : d;
+  const sh = raised ? d : -d;
+  const fill = o.moldFill ?? "shell";
+  const body = fill === "custom" ? o.moldColor ?? shellColor : shellColor;
+  const bodyAlpha = fill === "clear" ? 0.07 : fill === "custom" ? 0.8 : Math.min(0.55, 0.2 + shellOpacity * 0.45);
+  const base: React.CSSProperties = {
+    fontFamily: o.fontFamily ? `"${o.fontFamily}", monospace` : "var(--font-mono)",
+    fontSize: `${size}cqh`,
+    letterSpacing: `${(o.tracking ?? 0) * 100}%`,
+    lineHeight: 1.1,
+  };
+  const layer = (color: string, alpha: number, off: number, absolute: boolean) => (
+    <span
+      className={cn("pointer-events-none block whitespace-pre", absolute && "absolute inset-0")}
+      style={{
+        ...base,
+        color,
+        opacity: alpha,
+        transform: `translate(${off}cqh, ${off}cqh)`,
+      }}
+    >
+      {o.text}
+    </span>
+  );
+  return (
+    <span className="pointer-events-none relative block whitespace-pre">
+      {layer("#05070a", 0.55 * (0.5 + depth), sh, false)}
+      {layer("#ffffff", 0.6 * (0.5 + depth), hi, true)}
+      {layer(body, bodyAlpha, 0, true)}
+    </span>
+  );
+}
+
 export function Editor2D() {
 
   const { design, side, selectedId } = useStudio();
