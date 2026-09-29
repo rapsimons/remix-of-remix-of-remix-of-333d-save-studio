@@ -8,6 +8,12 @@ import { defaultTrace, traceImage, type TraceResult, type TraceSettings } from "
 export function MoldImporter({ open, onClose }: { open: boolean; onClose: () => void }) {
   const addObject = useStudio((s) => s.addObject);
   const design = useStudio((s) => s.design);
+  const fonts = useStudio((s) => s.fonts);
+  const [kind, setKind] = useState<"image" | "text">("image");
+  const [text, setText] = useState("ARCHIVE");
+  const [fontFamily, setFontFamily] = useState("");
+  const [fontSize, setFontSize] = useState(0.1);
+  const [tracking, setTracking] = useState(0.05);
   const [source, setSource] = useState<HTMLImageElement | null>(null);
   const [settings, setSettings] = useState<TraceSettings>(defaultTrace);
   const [mold, setMold] = useState<"deboss" | "emboss">("deboss");
