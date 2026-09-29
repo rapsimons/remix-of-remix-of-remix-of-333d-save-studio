@@ -208,6 +208,25 @@ export function Studio() {
                         onChange={(e) => store.updateObject(selected.id, { color: e.target.value }, false)}
                       />
                     </Field>
+                    <div className="grid grid-cols-3 gap-1" aria-label="Text finish">
+                      <Btn
+                        label="Print"
+                        active={!selected.mold}
+                        onClick={() => store.updateObject(selected.id, { mold: undefined })}
+                      />
+                      <Btn
+                        icon="mold"
+                        label="Deboss"
+                        active={selected.mold === "deboss"}
+                        onClick={() => store.updateObject(selected.id, { mold: "deboss" })}
+                      />
+                      <Btn
+                        icon="mold"
+                        label="Emboss"
+                        active={selected.mold === "emboss"}
+                        onClick={() => store.updateObject(selected.id, { mold: "emboss" })}
+                      />
+                    </div>
                   </>
                 )}
                 {selected.type === "image" && selected.stickerKind === "paper" && (
