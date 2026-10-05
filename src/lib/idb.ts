@@ -1,6 +1,6 @@
 const DB_NAME = "floppy-studio";
-const VERSION = 1;
-export const STORES = ["designs", "holo", "paper", "fonts", "models"] as const;
+const VERSION = 2;
+export const STORES = ["designs", "holo", "paper", "fonts", "models", "session"] as const;
 export type StoreName = (typeof STORES)[number];
 
 let dbp: Promise<IDBDatabase> | null = null;

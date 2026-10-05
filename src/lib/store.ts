@@ -85,21 +85,33 @@ export const useStudio = create<State & Actions>((set, get) => ({
 
   async init() {
     if (get().ready) return;
-    const [holo, paper, fonts, models, saved] = await Promise.all([
+    // ask the browser not to evict our saved uploads
+    void navigator.storage?.persist?.().catch(() => undefined);
+    const [holo, paper, fonts, models, saved, session] = await Promise.all([
       idb.all<GalleryItem>("holo"),
       idb.all<GalleryItem>("paper"),
       idb.all<FontItem>("fonts"),
       idb.all<ModelItem>("models"),
       idb.all<Design>("designs"),
+      idb.all<{ id: string; design: Design }>("session"),
     ]);
-    for (const f of fonts) void registerFont(f);
+    await Promise.all(fonts.map((f) => registerFont(f)));
+    const current = session.find((s) => s.id === "current")?.design;
     set({
       holo: [...builtinHolo, ...holo],
       paper: [...builtinPaper, ...paper],
       fonts,
       models: [{ id: "builtin", name: "3.5\u2033 HD Floppy", src: DEFAULT_MODEL_URL, builtin: true }, ...models],
       saved: saved.sort((a, b) => b.updatedAt - a.updatedAt),
+      ...(current ? { design: current } : {}),
       ready: true,
+    });
+    // keep the working disc saved so a reload restores it
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    useStudio.subscribe((s, prev) => {
+      if (s.design === prev.design) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => void idb.put("session", { id: "current", design: s.design }), 400);
     });
   },
 
