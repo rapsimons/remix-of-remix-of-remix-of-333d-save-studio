@@ -85,6 +85,8 @@ export const useStudio = create<State & Actions>((set, get) => ({
 
   async init() {
     if (get().ready) return;
+    // ask the browser not to evict our saved uploads
+    void navigator.storage?.persist?.().catch(() => undefined);
     const [holo, paper, fonts, models, saved, session] = await Promise.all([
       idb.all<GalleryItem>("holo"),
       idb.all<GalleryItem>("paper"),
