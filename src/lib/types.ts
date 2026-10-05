@@ -81,6 +81,11 @@ export type Design = {
   holoIntensity?: number;
   holoBands?: number;
   holoGrain?: number;
+  /** which physical media is being designed */
+  mediaType?: "floppy" | "cd";
+  /** CD reflective data side */
+  cdBackStyle?: "silver" | "black" | "gold" | "custom";
+  cdBackColor?: string;
   updatedAt: number;
 };
 
