@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import * as THREE from "three";
-import { renderLabel, renderMoldMaps, type LabelFilter, type ShellStyle } from "./labelCanvas";
+import { LABEL_ASPECT, renderLabel, renderMoldMaps, type Donut, type LabelFilter, type ShellStyle } from "./labelCanvas";
 import type { LabelObject } from "./types";
 
 /** Bevel normal + slope mask for artwork pressed into the plastic shell. */
@@ -43,16 +43,19 @@ export function useLabelTexture(
   size = 1024,
   filter: LabelFilter = "all",
   shell: ShellStyle = { color: "#2f6fd0", opacity: 0.55 },
+  aspect: number = LABEL_ASPECT,
+  donut?: Donut,
 ) {
   const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
   const key = JSON.stringify(objects);
   const shellKey = `${shell.color}|${shell.opacity}`;
+  const donutKey = donut ? `${donut.outer}|${donut.inner}` : "";
 
   useEffect(() => {
     let cancelled = false;
     let created: THREE.CanvasTexture | null = null;
     const [color, opacity] = shellKey.split("|");
-    renderLabel(objects, size, filter, { color: color!, opacity: Number(opacity) }).then((canvas) => {
+    renderLabel(objects, size, filter, { color: color!, opacity: Number(opacity) }, aspect, donut).then((canvas) => {
       if (cancelled) return;
       created = new THREE.CanvasTexture(canvas);
       created.colorSpace = THREE.SRGBColorSpace;
@@ -65,7 +68,7 @@ export function useLabelTexture(
       created?.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, size, filter, shellKey]);
+  }, [key, size, filter, shellKey, aspect, donutKey]);
 
   return texture;
 }

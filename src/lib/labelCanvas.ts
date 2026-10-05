@@ -301,14 +301,18 @@ export async function renderMoldMaps(
 }
 
 
+export type Donut = { outer: number; inner: number };
+
 export async function renderLabel(
   objects: LabelObject[],
   size = 1024,
   filter: LabelFilter = "all",
   shell: ShellStyle = { color: "#2f6fd0", opacity: 0.55 },
+  aspect: number = LABEL_ASPECT,
+  donut?: Donut,
 ): Promise<HTMLCanvasElement> {
   const w = size;
-  const h = Math.round(size / LABEL_ASPECT);
+  const h = Math.round(size / aspect);
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
@@ -344,6 +348,19 @@ export async function renderLabel(
     }
     ctx.restore();
   }
+
+  if (donut) {
+    // clip everything to the printable ring: outside the rim and inside the hub vanish
+    const r = Math.min(w, h) / 2;
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, r * donut.outer, 0, Math.PI * 2);
+    ctx.arc(w / 2, h / 2, r * donut.inner, 0, Math.PI * 2, true);
+    ctx.fill("evenodd");
+    ctx.restore();
+  }
   return canvas;
 }
+
 
