@@ -13,6 +13,7 @@ import { encodeDesign } from "@/lib/share";
 import { renderLabel } from "@/lib/labelCanvas";
 import { defaultAlignment } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { CD_BACKS, isCd, type CdBackStyle } from "@/lib/media";
 
 type Panel = "holo" | "paper" | "fonts" | "designs" | "models" | "import" | "links" | "mold" | null;
 type Mode = "design" | "view" | "align";
@@ -82,6 +83,38 @@ export function Studio() {
           <Icon name={theme === "dark" ? "sun" : "moon"} />
         </button>
       </header>
+
+      {/* media switch */}
+      <nav className="grid grid-cols-4 border-b border-hairline" aria-label="Media type">
+        {([
+          ["floppy", "Floppy 3.5\u2033"],
+          ["cd", "Compact Disc"],
+          ["md", "MiniDisc · soon"],
+          ["ps1", "PS1 Card · soon"],
+        ] as const).map(([k, label]) => {
+          const soon = k === "md" || k === "ps1";
+          const active = (design.mediaType ?? "floppy") === k;
+          return (
+            <button
+              key={k}
+              type="button"
+              disabled={soon}
+              onClick={() =>
+                !soon &&
+                store.patch((d) => {
+                  d.mediaType = k;
+                })
+              }
+              className={cn(
+                "label-caps py-1.5 text-[10px] text-muted-foreground disabled:opacity-40",
+                active && "bg-foreground text-background",
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </nav>
 
       {/* mode switch */}
       <nav className="grid grid-cols-3 border-b border-hairline">
@@ -479,6 +512,39 @@ export function Studio() {
                   })
                 }
               />
+              {isCd(design) && (
+                <section className="space-y-2 border border-hairline p-3">
+                  <span className="label-caps text-muted-foreground">Data side</span>
+                  <div className="grid grid-cols-4 gap-1">
+                    {(Object.keys(CD_BACKS) as CdBackStyle[]).map((k) => (
+                      <Btn
+                        key={k}
+                        label={CD_BACKS[k].label}
+                        active={(design.cdBackStyle ?? "silver") === k}
+                        onClick={() =>
+                          store.patch((d) => {
+                            d.cdBackStyle = k;
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                  {design.cdBackStyle === "custom" && (
+                    <Field label="Reflective color">
+                      <input
+                        type="color"
+                        className="h-8 w-full border border-hairline bg-background"
+                        value={design.cdBackColor ?? CD_BACKS.custom.color}
+                        onChange={(e) =>
+                          store.patch((d) => {
+                            d.cdBackColor = e.target.value;
+                          })
+                        }
+                      />
+                    </Field>
+                  )}
+                </section>
+              )}
               <section className="space-y-2 border border-hairline p-3">
                 <span className="label-caps text-muted-foreground">Disc shell</span>
                 <Field label="Color">
@@ -494,7 +560,7 @@ export function Studio() {
                   />
                 </Field>
                 <div className="grid grid-cols-6 gap-1">
-                  {["#2f6fd0", "#d94f7a", "#3fbf8f", "#e8b53c", "#8a5cd6", "#e6e6e6"].map((c) => (
+                  {["#2f6fd0", "#d94f7a", "#3fbf8f", "#e8b53c", "#8a5cd6", "#e6e6e6", "#c8ced4", "#f2be38", "#7d8590", "#2563eb", "#c97b63", "#1a1a1a"].map((c) => (
                     <button
                       key={c}
                       type="button"
@@ -521,6 +587,18 @@ export function Studio() {
                   onChange={(v) =>
                     store.patch((d) => {
                       d.opacity = v;
+                    })
+                  }
+                />
+                <Slider
+                  label="Reflectiveness"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={design.metalness ?? 0}
+                  onChange={(v) =>
+                    store.patch((d) => {
+                      d.metalness = v;
                     })
                   }
                 />
