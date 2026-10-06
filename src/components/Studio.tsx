@@ -87,10 +87,10 @@ export function Studio() {
       {/* media switch */}
       <nav className="grid grid-cols-4 border-b border-hairline" aria-label="Media type">
         {([
-          ["floppy", "Floppy 3.5\u2033"],
-          ["cd", "Compact Disc"],
-          ["md", "MiniDisc · soon"],
-          ["ps1", "PS1 Card · soon"],
+          ["floppy", "Floppy"],
+          ["cd", "CD"],
+          ["md", "MiniDisc"],
+          ["ps1", "M.Card"],
         ] as const).map(([k, label]) => {
           const soon = k === "md" || k === "ps1";
           const active = (design.mediaType ?? "floppy") === k;
@@ -99,6 +99,7 @@ export function Studio() {
               key={k}
               type="button"
               disabled={soon}
+              title={soon ? "Coming soon" : undefined}
               onClick={() =>
                 !soon &&
                 store.patch((d) => {
@@ -106,7 +107,7 @@ export function Studio() {
                 })
               }
               className={cn(
-                "label-caps py-1.5 text-[10px] text-muted-foreground disabled:opacity-40",
+                "truncate whitespace-nowrap px-1 py-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground disabled:opacity-40",
                 active && "bg-foreground text-background",
               )}
             >
@@ -548,36 +549,33 @@ export function Studio() {
               <section className="space-y-2 border border-hairline p-3">
                 <span className="label-caps text-muted-foreground">Disc shell</span>
                 <Field label="Color">
-                  <input
-                    type="color"
-                    className="h-8 w-full border border-hairline bg-background"
-                    value={design.color}
-                    onChange={(e) =>
-                      store.patch((d) => {
-                        d.color = e.target.value;
-                      })
-                    }
-                  />
-                </Field>
-                <div className="grid grid-cols-6 gap-1">
-                  {["#2f6fd0", "#d94f7a", "#3fbf8f", "#e8b53c", "#8a5cd6", "#e6e6e6", "#c8ced4", "#f2be38", "#7d8590", "#2563eb", "#c97b63", "#1a1a1a"].map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      aria-label={`Shell color ${c}`}
-                      onClick={() =>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      aria-label="Shell color picker"
+                      className="h-9 w-14 shrink-0 cursor-pointer border border-hairline bg-background"
+                      value={design.color}
+                      onChange={(e) =>
                         store.patch((d) => {
-                          d.color = c;
+                          d.color = e.target.value;
                         })
                       }
-                      className={cn(
-                        "h-7 border border-hairline",
-                        design.color.toLowerCase() === c && "ring-1 ring-foreground",
-                      )}
-                      style={{ backgroundColor: c }}
                     />
-                  ))}
-                </div>
+                    <input
+                      aria-label="Shell color hex"
+                      key={design.color}
+                      className={inputClass}
+                      defaultValue={design.color}
+                      onChange={(e) => {
+                        const v = e.target.value.trim();
+                        if (/^#[0-9a-fA-F]{6}$/.test(v))
+                          store.patch((d) => {
+                            d.color = v.toLowerCase();
+                          });
+                      }}
+                    />
+                  </div>
+                </Field>
                 <Slider
                   label="Transparency"
                   min={0.1}

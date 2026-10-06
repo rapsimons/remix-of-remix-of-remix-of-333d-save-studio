@@ -495,7 +495,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       s.vx *= damp;
       s.vy *= damp;
       if (design.autoRotate && Math.abs(s.vy) < 0.0008) s.y += design.autoRotateSpeed * dt;
-      camera.position.lerp(new THREE.Vector3(0, 0, (fit * 1.5) / z), Math.min(1, dt * 3));
+      camera.position.lerp(new THREE.Vector3(0, 0, (fit * (cd ? 1.12 : 1.5)) / z), Math.min(1, dt * 3));
     }
 
     g.rotation.x = s.x;
