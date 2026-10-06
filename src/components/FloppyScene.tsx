@@ -5,6 +5,10 @@ import * as THREE from "three";
 import type { Design } from "@/lib/types";
 import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
+import { cdBackColor, isCd, labelAspect, labelDonut, CD_OUTER } from "@/lib/media";
+import cdModel from "@/assets/cd.glb.asset.json";
+import cdSilver from "@/assets/cd-back-silver.png.asset.json";
+import cdBlack from "@/assets/cd-back-black.png.asset.json";
 import {
   createHoloMaterial,
   holoOverlayIndex,
@@ -161,26 +165,54 @@ function normalize(scene: THREE.Object3D) {
   return { object: outer, frontSurface, backSurface, faceW: size.x * scale, faceH: size.y * scale };
 }
 
+function normalizeCd(scene: THREE.Object3D) {
+  const clone = scene.clone(true);
+  clone.updateMatrixWorld(true);
+  const frontNormal = dominantNormal(clone).negate();
+  const aligned = new THREE.Group();
+  aligned.add(clone);
+  aligned.quaternion.setFromUnitVectors(frontNormal, new THREE.Vector3(0, 0, 1));
+  aligned.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(aligned);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const scale = 2 / Math.max(size.x, size.y);
+  const outer = new THREE.Group();
+  aligned.position.sub(center);
+  outer.add(aligned);
+  outer.scale.setScalar(scale);
+  const d = Math.max(size.x, size.y) * scale;
+  return { object: outer, frontSurface: (size.z * scale) / 2, backSurface: -(size.z * scale) / 2, faceW: d, faceH: d };
+}
+
 function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true, allowZoom = false }: Props) {
-  const gltf = useGLTF(modelUrl || DEFAULT_MODEL_URL);
+  const cd = isCd(design);
+  const gltf = useGLTF(cd ? cdModel.url : modelUrl || DEFAULT_MODEL_URL);
   const group = useRef<THREE.Group>(null);
   const spin = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
   const zoom = useRef(1);
   const { gl, camera } = useThree();
 
 
-  const { object, frontSurface, backSurface, faceW, faceH } = useMemo(() => normalize(gltf.scene), [gltf.scene]);
+  const { object, frontSurface, backSurface, faceW, faceH } = useMemo(
+    () => (cd ? normalizeCd(gltf.scene) : normalize(gltf.scene)),
+    [gltf.scene, cd],
+  );
+  const aspect = labelAspect(design);
+  const donut = labelDonut(design);
 
   const shell = useMemo(
     () => ({ color: design.color, opacity: design.opacity }),
     [design.color, design.opacity],
   );
-  const frontTex = useLabelTexture(design.front, 1024, "base", shell);
-  const backTex = useLabelTexture(design.back, 1024, "base", shell);
-  const frontHoloTex = useLabelTexture(design.front, 1024, "holo", shell);
-  const backHoloTex = useLabelTexture(design.back, 1024, "holo", shell);
-  const frontMold = useMoldTextures(design.front, 1024);
-  const backMold = useMoldTextures(design.back, 1024);
+  const frontTex = useLabelTexture(design.front, 1024, "base", shell, aspect, donut);
+  const backTex = useLabelTexture(design.back, 1024, "base", shell, aspect, donut);
+  const frontHoloTex = useLabelTexture(design.front, 1024, "holo", shell, aspect, donut);
+  const backHoloTex = useLabelTexture(design.back, 1024, "holo", shell, aspect, donut);
+  const frontMoldRaw = useMoldTextures(design.front, 1024);
+  const backMoldRaw = useMoldTextures(design.back, 1024);
+  const frontMold = cd ? null : frontMoldRaw;
+  const backMold = cd ? null : backMoldRaw;
 
   // molded artwork is the same plastic as the shell — only the bevel walls
   // catch light, so the shape reads as formed rather than printed
@@ -230,21 +262,64 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
 
 
-  const material = useMemo(
+  const metal = design.metalness ?? 0;
+  const material = useMemo(() => {
+    // metal blocks light: the more metallic, the less see-through the shell
+    const solid = Math.max(0, Math.min(1, (design.opacity - 0.1) / 0.9));
+    const transmission = cd ? 0.98 : Math.max(0, (1 - metal) * (1 - solid * 0.85));
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(cd ? "#ffffff" : design.color),
+      roughness: cd ? 0.03 : design.roughness,
+      metalness: cd ? 0 : metal,
+      transmission,
+      thickness: 0.5,
+      ior: cd ? 1.58 : 1.45,
+      clearcoat: 0.6 + metal * 0.4,
+      clearcoatRoughness: Math.max(0.02, design.roughness * 0.4),
+      envMapIntensity: 1 + metal * 1.4,
+      transparent: true,
+      opacity: cd ? 0.35 : Math.max(design.opacity, metal * 0.9),
+      side: THREE.DoubleSide,
+    });
+  }, [design.color, design.roughness, design.opacity, metal, cd]);
+
+  // CD reflective data layer
+  const backKind = design.cdBackStyle ?? "silver";
+  const cdBackUrl = backKind === "black" ? cdBlack.url : cdSilver.url;
+  const [cdBackTex, setCdBackTex] = useState<THREE.Texture | null>(null);
+  useEffect(() => {
+    if (!cd) return;
+    let alive = true;
+    new THREE.TextureLoader().load(cdBackUrl, (t) => {
+      if (!alive) return t.dispose();
+      t.colorSpace = THREE.SRGBColorSpace;
+      setCdBackTex(t);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [cd, cdBackUrl]);
+  const cdBackMat = useMemo(
     () =>
-      new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(design.color),
-        roughness: design.roughness,
-        transmission: 1,
-        thickness: 0.5,
-        ior: 1.45,
-        clearcoat: 0.6,
-        clearcoatRoughness: 0.1,
-        transparent: true,
-        opacity: design.opacity,
-        side: THREE.DoubleSide,
-      }),
-    [design.color, design.roughness, design.opacity],
+      cdBackTex
+        ? new THREE.MeshPhysicalMaterial({
+            map: cdBackTex,
+            color: new THREE.Color(backKind === "black" ? "#ffffff" : cdBackColor(design)),
+            metalness: 0.85,
+            roughness: 0.12,
+            iridescence: 1,
+            iridescenceIOR: 1.6,
+            iridescenceThicknessRange: [200, 820],
+            clearcoat: 1,
+            transparent: true,
+            alphaTest: 0.05,
+            side: THREE.FrontSide,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+          })
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cdBackTex, backKind, design.cdBackColor],
   );
 
   const metalMaterial = useMemo(
@@ -314,7 +389,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
       const name = mesh.name.toLowerCase();
-      if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
+      if (cd) {
+        mesh.material = material;
+      } else if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
         mesh.material = opticalDiscMaterial;
       } else if (name.includes("shutter")) {
         mesh.material = metalMaterial;
@@ -322,7 +399,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         mesh.material = material;
       }
     });
-  }, [object, material, metalMaterial, opticalDiscMaterial]);
+  }, [object, material, metalMaterial, opticalDiscMaterial, cd]);
 
   // pointer gestures (drag to spin, pinch / wheel to zoom)
   useEffect(() => {
@@ -463,7 +540,12 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             <planeGeometry args={[faceW, faceH]} />
           </mesh>
         )}
-        {backTex && (
+        {cd && cdBackMat && (
+          <mesh position={[0, 0, backSurface - surfaceGap * 0.5]} rotation={[0, Math.PI, 0]} material={cdBackMat}>
+            <planeGeometry args={[faceW * (CD_OUTER + 0.04), faceH * (CD_OUTER + 0.04)]} />
+          </mesh>
+        )}
+        {backTex && !cd && (
           <mesh position={[0, 0, backSurface - surfaceGap]} rotation={[0, Math.PI, 0]}>
             <planeGeometry args={[faceW, faceH]} />
             <meshStandardMaterial

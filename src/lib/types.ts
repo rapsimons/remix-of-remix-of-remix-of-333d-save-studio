@@ -68,6 +68,8 @@ export type Design = {
   color: string;
   opacity: number;
   roughness: number;
+  /** 0 = plastic, 1 = polished metal */
+  metalness?: number;
   front: LabelObject[];
   back: LabelObject[];
   links: MenuLink[];

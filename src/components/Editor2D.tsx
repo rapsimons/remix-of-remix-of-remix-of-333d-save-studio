@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { LABEL_ASPECT } from "@/lib/labelCanvas";
+import { CD_INNER, CD_OUTER, isCd, labelAspect } from "@/lib/media";
 import { useStudio } from "@/lib/store";
 import type { LabelObject } from "@/lib/types";
 import frontWireframe from "@/assets/floppy-front.svg.asset.json";
@@ -205,10 +205,13 @@ export function Editor2D() {
     }
   }
 
+  const cd = isCd(design);
+  const cdMask = `radial-gradient(circle closest-side, transparent ${CD_INNER * 100}%, #000 ${CD_INNER * 100 + 0.3}%, #000 ${CD_OUTER * 100}%, transparent ${CD_OUTER * 100 + 0.3}%)`;
+
   return (
     <div
       className="relative mx-auto w-full max-w-[520px] touch-none select-none"
-      style={{ aspectRatio: String(LABEL_ASPECT) }}
+      style={{ aspectRatio: String(labelAspect(design)) }}
 
     >
       <div
@@ -217,9 +220,13 @@ export function Editor2D() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="absolute inset-0 overflow-hidden border border-hairline bg-card [container-type:size]"
+        className={cn(
+          "absolute inset-0 overflow-hidden bg-card [container-type:size]",
+          cd ? "rounded-full" : "border border-hairline",
+        )}
+        style={cd ? { WebkitMaskImage: cdMask, maskImage: cdMask } : undefined}
       >
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        {!cd && (<div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute inset-0 opacity-20" style={{ backgroundColor: design.color }} />
           <div
             className="absolute inset-0"
@@ -236,8 +243,8 @@ export function Editor2D() {
               maskPosition: "center",
             }}
           />
-        </div>
-
+        </div>)}
+        {cd && <div className="pointer-events-none absolute inset-0 opacity-25" style={{ backgroundColor: design.color }} />}
 
         <div className="blueprint-grid pointer-events-none absolute inset-0 opacity-55" />
         {/* registration marks */}
