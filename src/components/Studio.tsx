@@ -563,8 +563,9 @@ export function Studio() {
                     />
                     <input
                       aria-label="Shell color hex"
+                      key={design.color}
                       className={inputClass}
-                      value={design.color}
+                      defaultValue={design.color}
                       onChange={(e) => {
                         const v = e.target.value.trim();
                         if (/^#[0-9a-fA-F]{6}$/.test(v))
