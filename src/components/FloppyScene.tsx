@@ -620,7 +620,7 @@ export function FloppyScene(props: Props) {
       <Suspense fallback={null}>
         <ErrorGuard onError={() => setFailed(true)}>
           <Floppy {...props} />
-          <Environment resolution={256}>
+          <Environment resolution={256} key={JSON.stringify(props.design.lights ?? [])}>
             <Lightformer intensity={3} position={[0, 4, 2]} scale={[8, 8, 1]} />
             <Lightformer intensity={1.8} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
             <Lightformer intensity={1.8} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />

@@ -13,7 +13,7 @@ import { encodeDesign } from "@/lib/share";
 import { renderLabel } from "@/lib/labelCanvas";
 import { defaultAlignment } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { CD_BACKS, isCd, type CdBackStyle } from "@/lib/media";
+import { CD_BACKS, cdBackColor, isCd, type CdBackStyle } from "@/lib/media";
 
 type Panel = "holo" | "paper" | "fonts" | "designs" | "models" | "import" | "links" | "mold" | null;
 type Mode = "design" | "view" | "align";
