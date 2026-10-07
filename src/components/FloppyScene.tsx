@@ -305,8 +305,10 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         ? new THREE.MeshPhysicalMaterial({
             map: cdBackTex,
             color: new THREE.Color(backKind === "black" ? "#ffffff" : cdBackColor(design)),
-            metalness: 0.85,
-            roughness: 0.12,
+            metalness: 1,
+            roughness: 0.05,
+            envMapIntensity: 2.8,
+            clearcoatRoughness: 0.02,
             iridescence: 1,
             iridescenceIOR: 1.6,
             iridescenceThicknessRange: [200, 820],
@@ -612,6 +614,9 @@ export function FloppyScene(props: Props) {
       <ambientLight intensity={0.72} />
       <directionalLight position={[3, 4, 5]} intensity={1.8} />
       <directionalLight position={[-4, -2, -3]} intensity={0.8} />
+      {(props.design.lights ?? []).map((l) => (
+        <directionalLight key={l.id} position={[l.x * 6, -l.y * 6, 4]} color={l.color} intensity={l.intensity * 2.5} />
+      ))}
       <Suspense fallback={null}>
         <ErrorGuard onError={() => setFailed(true)}>
           <Floppy {...props} />
@@ -619,6 +624,9 @@ export function FloppyScene(props: Props) {
             <Lightformer intensity={3} position={[0, 4, 2]} scale={[8, 8, 1]} />
             <Lightformer intensity={1.8} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
             <Lightformer intensity={1.8} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />
+            {(props.design.lights ?? []).map((l) => (
+              <Lightformer key={l.id} form="circle" intensity={l.intensity * 6} color={l.color} position={[l.x * 5, -l.y * 5, 4]} scale={[3, 3, 1]} target={[0, 0, 0]} />
+            ))}
           </Environment>
         </ErrorGuard>
       </Suspense>
