@@ -13,7 +13,7 @@ import { encodeDesign } from "@/lib/share";
 import { renderLabel } from "@/lib/labelCanvas";
 import { defaultAlignment } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { CD_BACKS, isCd, type CdBackStyle } from "@/lib/media";
+import { CD_BACKS, cdBackColor, isCd, type CdBackStyle } from "@/lib/media";
 
 type Panel = "holo" | "paper" | "fonts" | "designs" | "models" | "import" | "links" | "mold" | null;
 type Mode = "design" | "view" | "align";
@@ -158,7 +158,7 @@ export function Studio() {
 
             <Editor2D />
 
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-6 gap-1 [&>button]:min-w-0 [&>button]:px-0.5 [&_span]:text-[9px] [&_span]:tracking-wider">
               <Btn
                 icon="text"
                 label="Text"
@@ -472,7 +472,7 @@ export function Studio() {
 
         {mode === "view" && (
           <div className="flex h-full flex-col">
-            <div className="min-h-[55svh] flex-1">
+            <div className="h-[42svh] min-h-[260px] shrink-0">
               <FloppyViewer
                 design={design}
                 lockX={lockX}
@@ -530,23 +530,23 @@ export function Studio() {
                       />
                     ))}
                   </div>
-                  {design.cdBackStyle === "custom" && (
-                    <Field label="Reflective color">
-                      <input
-                        type="color"
-                        className="h-8 w-full border border-hairline bg-background"
-                        value={design.cdBackColor ?? CD_BACKS.custom.color}
-                        onChange={(e) =>
-                          store.patch((d) => {
-                            d.cdBackColor = e.target.value;
-                          })
-                        }
-                      />
-                    </Field>
-                  )}
+                  <Field label="Reflective color">
+                    <input
+                      type="color"
+                      aria-label="Data side color"
+                      className="h-9 w-full cursor-pointer border border-hairline bg-background"
+                      value={cdBackColor(design)}
+                      onChange={(e) =>
+                        store.patch((d) => {
+                          d.cdBackStyle = "custom";
+                          d.cdBackColor = e.target.value;
+                        })
+                      }
+                    />
+                  </Field>
                 </section>
               )}
-              <section className="space-y-2 border border-hairline p-3">
+              {!isCd(design) && (<section className="space-y-2 border border-hairline p-3">
                 <span className="label-caps text-muted-foreground">Disc shell</span>
                 <Field label="Color">
                   <div className="flex gap-2">
@@ -612,7 +612,7 @@ export function Studio() {
                     })
                   }
                 />
-              </section>
+              </section>)}
 
               <section className="space-y-2">
                 <span className="label-caps text-muted-foreground">Foil finish</span>

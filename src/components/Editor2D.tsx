@@ -211,7 +211,7 @@ export function Editor2D() {
   return (
     <div
       className="relative mx-auto w-full max-w-[520px] touch-none select-none"
-      style={{ aspectRatio: String(labelAspect(design)) }}
+      style={{ aspectRatio: String(labelAspect(design)), maxWidth: `min(520px, calc(44svh * ${labelAspect(design)}))` }}
 
     >
       <div

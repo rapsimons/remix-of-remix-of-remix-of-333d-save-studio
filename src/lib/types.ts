@@ -88,6 +88,7 @@ export type Design = {
   /** CD reflective data side */
   cdBackStyle?: "silver" | "black" | "gold" | "custom";
   cdBackColor?: string;
+  lights?: SceneLight[];
   updatedAt: number;
 };
 
@@ -127,3 +128,5 @@ export function createDesign(): Design {
     updatedAt: Date.now(),
   };
 }
+
+export type SceneLight = { id: string; x: number; y: number; color: string; intensity: number };

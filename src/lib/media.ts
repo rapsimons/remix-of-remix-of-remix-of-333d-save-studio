@@ -20,9 +20,9 @@ export function labelDonut(d: Pick<Design, "mediaType">) {
 
 export const CD_BACKS = {
   silver: { label: "Silver", color: "#ffffff", tex: "silver" as const },
-  black: { label: "PS1 Black", color: "#3a3a3a", tex: "black" as const },
+  black: { label: "Black", color: "#3a3a3a", tex: "black" as const },
   gold: { label: "Gold", color: "#f2c24e", tex: "silver" as const },
-  custom: { label: "Custom", color: "#ff4b82", tex: "silver" as const },
+  custom: { label: "Color", color: "#ff4b82", tex: "silver" as const },
 };
 export type CdBackStyle = keyof typeof CD_BACKS;
 

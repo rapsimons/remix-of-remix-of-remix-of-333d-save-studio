@@ -3,6 +3,7 @@ import { FloppyScene } from "./FloppyScene";
 import { Icon, type IconName } from "./ui/Icon";
 import type { Design } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { LightEditor } from "./LightEditor";
 
 export function FloppyViewer({
   design,
@@ -19,6 +20,7 @@ export function FloppyViewer({
 }) {
   const [flat, setFlat] = useState(false);
   const [immersive, setImmersive] = useState(false);
+  const [lighting, setLighting] = useState(false);
 
   return (
     <div className={cn("relative h-full w-full", className)}>
@@ -30,12 +32,23 @@ export function FloppyViewer({
         lockY={lockY}
         onDoubleTap={() => setFlat((f) => !f)}
       />
-      {!flat && (
+      {lighting && <LightEditor design={design} onDone={() => setLighting(false)} />}
+      {!flat && !lighting && (
+        <button
+          type="button"
+          aria-label="Light"
+          onClick={() => setLighting(true)}
+          className="label-caps absolute bottom-3 left-3 flex size-12 items-center justify-center rounded-full border border-hairline bg-background/80 text-[10px] backdrop-blur hover:bg-accent"
+        >
+          Light
+        </button>
+      )}
+      {!flat && !lighting && (
         <span className="pointer-events-none absolute inset-x-0 bottom-3 text-center label-caps text-muted-foreground">
           Double tap
         </span>
       )}
-      {!flat && (
+      {!flat && !lighting && (
         <button
           type="button"
           aria-label="Inspect in full screen"
