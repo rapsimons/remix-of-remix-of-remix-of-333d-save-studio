@@ -614,9 +614,17 @@ export function FloppyScene(props: Props) {
       <ambientLight intensity={0.72} />
       <directionalLight position={[3, 4, 5]} intensity={1.8} />
       <directionalLight position={[-4, -2, -3]} intensity={0.8} />
+      {/* soft gel washes: weak, far away, coming from the direction each dot was placed */}
       {(props.design.lights ?? []).map((l) => (
-        <directionalLight key={l.id} position={[l.x * 6, -l.y * 6, 4]} color={l.color} intensity={l.intensity * 2.5} />
+        <hemisphereLight
+          key={l.id}
+          position={[l.x * 10, -l.y * 10, 6]}
+          color={l.color}
+          groundColor="#000000"
+          intensity={l.intensity * 0.9}
+        />
       ))}
+      <BackgroundImage url={props.design.bgImage} />
       <Suspense fallback={null}>
         <ErrorGuard onError={() => setFailed(true)}>
           <Floppy {...props} />
@@ -624,8 +632,27 @@ export function FloppyScene(props: Props) {
             <Lightformer intensity={3} position={[0, 4, 2]} scale={[8, 8, 1]} />
             <Lightformer intensity={1.8} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
             <Lightformer intensity={1.8} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />
+            {/* huge, dim, off-screen gel panels — reflect as smooth colour falloff, never a hotspot */}
             {(props.design.lights ?? []).map((l) => (
-              <Lightformer key={l.id} form="circle" intensity={l.intensity * 6} color={l.color} position={[l.x * 5, -l.y * 5, 4]} scale={[3, 3, 1]} target={[0, 0, 0]} />
+              <Lightformer
+                key={l.id}
+                form="ring"
+                intensity={l.intensity * 0.6}
+                color={l.color}
+                position={[l.x * 9, -l.y * 9, 3 - Math.hypot(l.x, l.y) * 2]}
+                scale={[14, 14, 1]}
+                target={[0, 0, 0]}
+              />
+            ))}
+            {(props.design.lights ?? []).map((l) => (
+              <Lightformer
+                key={`${l.id}-wash`}
+                intensity={l.intensity * 0.35}
+                color={l.color}
+                position={[l.x * 12, -l.y * 12, -2]}
+                scale={[20, 20, 1]}
+                target={[0, 0, 0]}
+              />
             ))}
           </Environment>
         </ErrorGuard>
