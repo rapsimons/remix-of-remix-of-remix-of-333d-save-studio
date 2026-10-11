@@ -89,6 +89,17 @@ export type Design = {
   cdBackStyle?: "silver" | "black" | "gold" | "custom";
   cdBackColor?: string;
   lights?: SceneLight[];
+  /** CD printed face (silkscreen lacquer) — opacity 0 = clear */
+  cdFrontColor?: string;
+  cdFrontOpacity?: number;
+  cdFrontMetalness?: number;
+  cdFrontRoughness?: number;
+  /** floppy metal shutter / hub */
+  shutterColor?: string;
+  shutterMetalness?: number;
+  shutterRoughness?: number;
+  /** image shown behind the 3D model (data URL) */
+  bgImage?: string;
   updatedAt: number;
 };
 

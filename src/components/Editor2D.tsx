@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { CD_INNER, CD_OUTER, isCd, labelAspect } from "@/lib/media";
+import { CD_HOLE } from "@/lib/labelCanvas";
 import { useStudio } from "@/lib/store";
 import type { LabelObject } from "@/lib/types";
 import frontWireframe from "@/assets/floppy-front.svg.asset.json";
@@ -206,7 +207,8 @@ export function Editor2D() {
   }
 
   const cd = isCd(design);
-  const cdMask = `radial-gradient(circle closest-side, transparent ${CD_INNER * 100}%, #000 ${CD_INNER * 100 + 0.3}%, #000 ${CD_OUTER * 100}%, transparent ${CD_OUTER * 100 + 0.3}%)`;
+  const hole = CD_HOLE * 100;
+  const cdMask = `radial-gradient(circle closest-side, transparent ${hole}%, rgba(0,0,0,0.4) ${hole + 0.3}%, rgba(0,0,0,0.4) ${CD_INNER * 100}%, #000 ${CD_INNER * 100 + 0.3}%, #000 ${CD_OUTER * 100}%, rgba(0,0,0,0.25) ${CD_OUTER * 100 + 0.3}%, rgba(0,0,0,0.25) 99.6%, transparent 100%)`;
 
   return (
     <div
@@ -244,15 +246,32 @@ export function Editor2D() {
             }}
           />
         </div>)}
-        {cd && <div className="pointer-events-none absolute inset-0 opacity-25" style={{ backgroundColor: design.color }} />}
+        {cd && (
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundColor:
+                side === "front" && (design.cdFrontOpacity ?? 0) > 0 ? design.cdFrontColor ?? "#e8e8e8" : "var(--muted)",
+              opacity: side === "front" && (design.cdFrontOpacity ?? 0) > 0 ? design.cdFrontOpacity : 0.6,
+            }}
+          />
+        )}
 
         <div className="blueprint-grid pointer-events-none absolute inset-0 opacity-55" />
-        {/* registration marks */}
-        <span className="absolute left-2 top-2 size-3 border-l border-t border-hairline" />
-        <span className="absolute right-2 top-2 size-3 border-r border-t border-hairline" />
-        <span className="absolute bottom-2 left-2 size-3 border-b border-l border-hairline" />
-        <span className="absolute bottom-2 right-2 size-3 border-b border-r border-hairline" />
-        <span className="absolute inset-x-6 top-[14%] border-t border-dashed border-hairline" />
+        {cd ? (
+          <>
+            <span className="pointer-events-none absolute rounded-full border border-hairline" style={{ inset: `${50 - CD_INNER * 50}%` }} />
+            <span className="pointer-events-none absolute rounded-full border border-dashed border-hairline" style={{ inset: `${50 - CD_OUTER * 50}%` }} />
+          </>
+        ) : (
+          <>
+            <span className="absolute left-2 top-2 size-3 border-l border-t border-hairline" />
+            <span className="absolute right-2 top-2 size-3 border-r border-t border-hairline" />
+            <span className="absolute bottom-2 left-2 size-3 border-b border-l border-hairline" />
+            <span className="absolute bottom-2 right-2 size-3 border-b border-r border-hairline" />
+            <span className="absolute inset-x-6 top-[14%] border-t border-dashed border-hairline" />
+          </>
+        )}
 
         {objects.map((o) => {
           const selected = o.id === selectedId;
