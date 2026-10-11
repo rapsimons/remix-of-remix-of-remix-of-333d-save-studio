@@ -5,7 +5,7 @@ import * as THREE from "three";
 import type { Design } from "@/lib/types";
 import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
-import { cdBackColor, isCd, labelAspect, labelDonut, CD_OUTER } from "@/lib/media";
+import { cdBackColor, isCd, labelAspect, labelDonut, CD_OUTER, CD_INNER } from "@/lib/media";
 import cdModel from "@/assets/cd.glb.asset.json";
 import cdSilver from "@/assets/cd-back-silver.png.asset.json";
 import cdBlack from "@/assets/cd-back-black.png.asset.json";
