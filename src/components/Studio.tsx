@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Btn, Field, Modal, Slider, inputClass } from "./ui/kit";
+import { Btn, Drawer, Field, Modal, Slider, inputClass } from "./ui/kit";
 import { Icon } from "./ui/Icon";
 import { Editor2D } from "./Editor2D";
 import { FloppyViewer } from "./FloppyViewer";
@@ -28,6 +28,9 @@ export function Studio() {
   const [lockY, setLockY] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const stampRef = useRef<HTMLInputElement>(null);
+  const bgRef = useRef<HTMLInputElement>(null);
+  const [drawer, setDrawer] = useState<string | null>(null);
+  const toggleDrawer = (k: string) => setDrawer((d) => (d === k ? null : k));
 
   useEffect(() => {
     void store.init();
@@ -472,7 +475,7 @@ export function Studio() {
 
         {mode === "view" && (
           <div className="flex h-full flex-col">
-            <div className="h-[42svh] min-h-[260px] shrink-0">
+            <div className="min-h-[300px] flex-1">
               <FloppyViewer
                 design={design}
                 lockX={lockX}
@@ -485,202 +488,105 @@ export function Studio() {
                 }}
               />
             </div>
-            <div className="space-y-2 border-t border-hairline p-3">
-              <div className="grid grid-cols-4 gap-1">
-                <Btn icon="lock" label="Lock X" active={lockX} onClick={() => setLockX((v) => !v)} />
-                <Btn icon="lock" label="Lock Y" active={lockY} onClick={() => setLockY((v) => !v)} />
-                <Btn
-                  icon={design.autoRotate ? "pause" : "play"}
-                  label="Spin"
-                  active={design.autoRotate}
-                  onClick={() =>
-                    store.patch((d) => {
-                      d.autoRotate = !d.autoRotate;
-                    })
-                  }
-                />
-                <Btn icon="link" label="Menu" onClick={() => setPanel("links")} />
-              </div>
-              <Slider
-                label="Speed"
-                min={0}
-                max={3}
-                step={0.1}
-                value={design.autoRotateSpeed}
-                onChange={(v) =>
-                  store.patch((d) => {
-                    d.autoRotateSpeed = v;
-                  })
-                }
-              />
-              {isCd(design) && (
-                <section className="space-y-2 border border-hairline p-3">
-                  <span className="label-caps text-muted-foreground">Data side</span>
-                  <div className="grid grid-cols-4 gap-1">
-                    {(Object.keys(CD_BACKS) as CdBackStyle[]).map((k) => (
-                      <Btn
-                        key={k}
-                        label={CD_BACKS[k].label}
-                        active={(design.cdBackStyle ?? "silver") === k}
-                        onClick={() =>
-                          store.patch((d) => {
-                            d.cdBackStyle = k;
-                          })
-                        }
-                      />
-                    ))}
-                  </div>
-                  <Field label="Reflective color">
-                    <input
-                      type="color"
-                      aria-label="Data side color"
-                      className="h-9 w-full cursor-pointer border border-hairline bg-background"
-                      value={cdBackColor(design)}
-                      onChange={(e) =>
-                        store.patch((d) => {
-                          d.cdBackStyle = "custom";
-                          d.cdBackColor = e.target.value;
-                        })
-                      }
-                    />
-                  </Field>
-                </section>
-              )}
-              {!isCd(design) && (<section className="space-y-2 border border-hairline p-3">
-                <span className="label-caps text-muted-foreground">Disc shell</span>
-                <Field label="Color">
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      aria-label="Shell color picker"
-                      className="h-9 w-14 shrink-0 cursor-pointer border border-hairline bg-background"
-                      value={design.color}
-                      onChange={(e) =>
-                        store.patch((d) => {
-                          d.color = e.target.value;
-                        })
-                      }
-                    />
-                    <input
-                      aria-label="Shell color hex"
-                      key={design.color}
-                      className={inputClass}
-                      defaultValue={design.color}
-                      onChange={(e) => {
-                        const v = e.target.value.trim();
-                        if (/^#[0-9a-fA-F]{6}$/.test(v))
-                          store.patch((d) => {
-                            d.color = v.toLowerCase();
-                          });
-                      }}
-                    />
-                  </div>
-                </Field>
-                <Slider
-                  label="Transparency"
-                  min={0.1}
-                  max={1}
-                  step={0.05}
-                  value={design.opacity}
-                  onChange={(v) =>
-                    store.patch((d) => {
-                      d.opacity = v;
-                    })
-                  }
-                />
-                <Slider
-                  label="Reflectiveness"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={design.metalness ?? 0}
-                  onChange={(v) =>
-                    store.patch((d) => {
-                      d.metalness = v;
-                    })
-                  }
-                />
-                <Slider
-                  label="Frost"
-                  min={0}
-                  max={0.6}
-                  step={0.01}
-                  value={design.roughness}
-                  onChange={(v) =>
-                    store.patch((d) => {
-                      d.roughness = v;
-                    })
-                  }
-                />
-              </section>)}
+            <div className="max-h-[50svh] space-y-1.5 overflow-y-auto border-t border-hairline p-2">
+              <Drawer title="Motion" open={drawer === "motion"} onToggle={() => toggleDrawer("motion")}>
+                <div className="grid grid-cols-4 gap-1">
+                  <Btn icon="lock" label="Lock X" active={lockX} onClick={() => setLockX((v) => !v)} />
+                  <Btn icon="lock" label="Lock Y" active={lockY} onClick={() => setLockY((v) => !v)} />
+                  <Btn
+                    icon={design.autoRotate ? "pause" : "play"}
+                    label="Spin"
+                    active={design.autoRotate}
+                    onClick={() => store.patch((d) => void (d.autoRotate = !d.autoRotate))}
+                  />
+                  <Btn icon="link" label="Menu" onClick={() => setPanel("links")} />
+                </div>
+                <Slider label="Speed" min={0} max={3} step={0.1} value={design.autoRotateSpeed}
+                  onChange={(v) => store.patch((d) => void (d.autoRotateSpeed = v))} />
+              </Drawer>
 
-              <section className="space-y-2">
-                <span className="label-caps text-muted-foreground">Foil finish</span>
+              {isCd(design) ? (
+                <>
+                  <Drawer title="Disc front" open={drawer === "cdfront"} onToggle={() => toggleDrawer("cdfront")}>
+                    <ColorRow label="Print color" value={design.cdFrontColor ?? "#e8e8e8"}
+                      onChange={(v) => store.patch((d) => { d.cdFrontColor = v; if (!d.cdFrontOpacity) d.cdFrontOpacity = 1; })} />
+                    <Slider label="Solid ↔ clear" min={0} max={1} step={0.05} value={design.cdFrontOpacity ?? 0}
+                      onChange={(v) => store.patch((d) => void (d.cdFrontOpacity = v))} />
+                    <Slider label="Metallic" min={0} max={1} step={0.01} value={design.cdFrontMetalness ?? 0}
+                      onChange={(v) => store.patch((d) => void (d.cdFrontMetalness = v))} />
+                    <Slider label="Gloss" min={0} max={1} step={0.01} value={1 - (design.cdFrontRoughness ?? 0.35)}
+                      onChange={(v) => store.patch((d) => void (d.cdFrontRoughness = 1 - v))} />
+                  </Drawer>
+                  <Drawer title="Disc back" open={drawer === "cdback"} onToggle={() => toggleDrawer("cdback")}>
+                    <div className="grid grid-cols-4 gap-1">
+                      {(Object.keys(CD_BACKS) as CdBackStyle[]).map((k) => (
+                        <Btn key={k} label={CD_BACKS[k].label} active={(design.cdBackStyle ?? "silver") === k}
+                          onClick={() => store.patch((d) => void (d.cdBackStyle = k))} />
+                      ))}
+                    </div>
+                    <ColorRow label="Reflective color" value={cdBackColor(design)}
+                      onChange={(v) => store.patch((d) => { d.cdBackStyle = "custom"; d.cdBackColor = v; })} />
+                  </Drawer>
+                </>
+              ) : (
+                <>
+                  <Drawer title="Shell" open={drawer === "shell"} onToggle={() => toggleDrawer("shell")}>
+                    <ColorRow label="Color" value={design.color} onChange={(v) => store.patch((d) => void (d.color = v))} />
+                    <Slider label="Transparency" min={0.1} max={1} step={0.05} value={design.opacity}
+                      onChange={(v) => store.patch((d) => void (d.opacity = v))} />
+                    <Slider label="Reflectiveness" min={0} max={1} step={0.01} value={design.metalness ?? 0}
+                      onChange={(v) => store.patch((d) => void (d.metalness = v))} />
+                    <Slider label="Frost" min={0} max={0.6} step={0.01} value={design.roughness}
+                      onChange={(v) => store.patch((d) => void (d.roughness = v))} />
+                  </Drawer>
+                  <Drawer title="Metal parts" open={drawer === "metal"} onToggle={() => toggleDrawer("metal")}>
+                    <ColorRow label="Color" value={design.shutterColor ?? "#d7dce0"}
+                      onChange={(v) => store.patch((d) => void (d.shutterColor = v))} />
+                    <Slider label="Solid ↔ metallic" min={0} max={1} step={0.01} value={design.shutterMetalness ?? 1}
+                      onChange={(v) => store.patch((d) => void (d.shutterMetalness = v))} />
+                    <Slider label="Polish" min={0} max={1} step={0.01} value={1 - (design.shutterRoughness ?? 0.18)}
+                      onChange={(v) => store.patch((d) => void (d.shutterRoughness = 1 - v))} />
+                  </Drawer>
+                </>
+              )}
+
+              <Drawer title="Foil stickers" open={drawer === "foil"} onToggle={() => toggleDrawer("foil")}>
                 <div className="grid grid-cols-4 gap-1" aria-label="Foil facets">
                   {(["none", "triangles", "squares", "stripes"] as const).map((o) => (
-                    <Btn
-                      key={o}
-                      label={o === "none" ? "smooth" : o}
-                      active={(design.holoOverlay ?? "triangles") === o}
-                      onClick={() =>
-                        store.patch((d) => {
-                          d.holoOverlay = o;
-                        })
-                      }
-                    />
+                    <Btn key={o} label={o === "none" ? "smooth" : o} active={(design.holoOverlay ?? "triangles") === o}
+                      onClick={() => store.patch((d) => void (d.holoOverlay = o))} />
                   ))}
                 </div>
                 <div className="grid grid-cols-3 gap-1" aria-label="Foil flow">
                   {(["linear", "radial", "patches"] as const).map((p) => (
-                    <Btn
-                      key={p}
-                      label={p}
-                      active={(design.holoPattern ?? "linear") === p}
-                      onClick={() =>
-                        store.patch((d) => {
-                          d.holoPattern = p;
-                        })
-                      }
-                    />
+                    <Btn key={p} label={p} active={(design.holoPattern ?? "linear") === p}
+                      onClick={() => store.patch((d) => void (d.holoPattern = p))} />
                   ))}
                 </div>
-                <Slider
-                  label="Shine"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={design.holoIntensity ?? 0.85}
-                  onChange={(v) =>
-                    store.patch((d) => {
-                      d.holoIntensity = v;
-                    })
-                  }
-                />
-                <Slider
-                  label="Rainbow bands"
-                  min={1}
-                  max={20}
-                  step={1}
-                  value={design.holoBands ?? 10}
-                  onChange={(v) =>
-                    store.patch((d) => {
-                      d.holoBands = v;
-                    })
-                  }
-                />
-                <Slider
-                  label="Sparkle"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={design.holoGrain ?? 0.25}
-                  onChange={(v) =>
-                    store.patch((d) => {
-                      d.holoGrain = v;
-                    })
-                  }
-                />
-              </section>
+                <Slider label="Shine" min={0} max={1} step={0.05} value={design.holoIntensity ?? 0.85}
+                  onChange={(v) => store.patch((d) => void (d.holoIntensity = v))} />
+                <Slider label="Rainbow bands" min={1} max={20} step={1} value={design.holoBands ?? 10}
+                  onChange={(v) => store.patch((d) => void (d.holoBands = v))} />
+                <Slider label="Sparkle" min={0} max={1} step={0.05} value={design.holoGrain ?? 0.25}
+                  onChange={(v) => store.patch((d) => void (d.holoGrain = v))} />
+              </Drawer>
+
+              <Drawer title="Background" open={drawer === "bg"} onToggle={() => toggleDrawer("bg")}>
+                <div className="grid grid-cols-2 gap-1">
+                  <Btn icon="image" label="Upload" onClick={() => bgRef.current?.click()} />
+                  <Btn icon="delete" label="Remove" disabled={!design.bgImage}
+                    onClick={() => store.patch((d) => void delete d.bgImage)} />
+                </div>
+                <input ref={bgRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    const r = new FileReader();
+                    r.onload = () => store.patch((d) => void (d.bgImage = String(r.result)));
+                    r.readAsDataURL(f);
+                    e.target.value = "";
+                  }} />
+              </Drawer>
             </div>
           </div>
         )}
@@ -835,5 +741,22 @@ export function Studio() {
         }}
       />
     </div>
+  );
+}
+
+function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <Field label={label}>
+      <div className="flex gap-2">
+        <input type="color" aria-label={`${label} picker`} value={value}
+          className="h-9 w-14 shrink-0 cursor-pointer border border-hairline bg-background"
+          onChange={(e) => onChange(e.target.value)} />
+        <input aria-label={`${label} hex`} key={value} className={inputClass} defaultValue={value}
+          onChange={(e) => {
+            const v = e.target.value.trim();
+            if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v.toLowerCase());
+          }} />
+      </div>
+    </Field>
   );
 }

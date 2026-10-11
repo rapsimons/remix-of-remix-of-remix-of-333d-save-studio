@@ -118,3 +118,31 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 export const inputClass =
   "w-full border border-hairline bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground";
+
+/** Tap-to-open drawer: only the header shows until it's needed. */
+export function Drawer({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border border-hairline">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-3 py-2.5"
+      >
+        <span className="label-caps">{title}</span>
+        <span className={cn("text-xs text-muted-foreground transition-transform", open && "rotate-180")}>▾</span>
+      </button>
+      {open && <div className="space-y-2 border-t border-hairline p-3">{children}</div>}
+    </section>
+  );
+}
