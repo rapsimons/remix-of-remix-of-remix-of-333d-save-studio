@@ -19,6 +19,8 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
 
 /** Aspect ratio of the label face: 3.5" floppy is 90 x 94 mm */
 export const LABEL_ASPECT = 90 / 94;
+/** CD spindle hole as a fraction of the disc radius (15 mm / 124 mm) */
+export const CD_HOLE = 0.125;
 
 function drawStyledImage(
   ctx: CanvasRenderingContext2D,
@@ -350,14 +352,23 @@ export async function renderLabel(
   }
 
   if (donut) {
-    // clip everything to the printable ring: outside the rim and inside the hub vanish
+    // outside the rim vanishes; the clear hub keeps artwork semi-transparent;
+    // the spindle hole is empty
     const r = Math.min(w, h) / 2;
     ctx.save();
     ctx.globalCompositeOperation = "destination-in";
     ctx.beginPath();
     ctx.arc(w / 2, h / 2, r * donut.outer, 0, Math.PI * 2);
-    ctx.arc(w / 2, h / 2, r * donut.inner, 0, Math.PI * 2, true);
-    ctx.fill("evenodd");
+    ctx.fill();
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, r * donut.inner, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, r * CD_HOLE, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
   return canvas;
