@@ -284,6 +284,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   }, [design.color, design.roughness, design.opacity, metal, cd]);
 
   // CD reflective data layer
+  const holoEnvRef = useRef<THREE.Texture | null>(null);
   const backKind = design.cdBackStyle ?? "silver";
   const cdBackUrl = backKind === "black" ? cdBlack.url : cdSilver.url;
   const [cdBackTex, setCdBackTex] = useState<THREE.Texture | null>(null);
@@ -299,42 +300,57 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       alive = false;
     };
   }, [cd, cdBackUrl]);
-  const cdBackMat = useMemo(
-    () =>
-      cdBackTex
-        ? new THREE.MeshPhysicalMaterial({
-            map: cdBackTex,
-            color: new THREE.Color(backKind === "black" ? "#ffffff" : cdBackColor(design)),
-            metalness: 1,
-            roughness: 0.05,
-            envMapIntensity: 2.8,
-            clearcoatRoughness: 0.02,
-            iridescence: 1,
-            iridescenceIOR: 1.6,
-            iridescenceThicknessRange: [200, 820],
-            clearcoat: 1,
-            transparent: true,
-            alphaTest: 0.05,
-            side: THREE.FrontSide,
-            polygonOffset: true,
-            polygonOffsetFactor: -1,
-          })
-        : null,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cdBackTex, backKind, design.cdBackColor],
-  );
+  const cdBackTint = backKind === "black" ? null : cdBackColor(design);
+  const cdBackMap = useMemo(() => {
+    const img = cdBackTex?.image as HTMLImageElement | undefined;
+    if (!img) return null;
+    const c = document.createElement("canvas");
+    c.width = img.width;
+    c.height = img.height;
+    const g = c.getContext("2d")!;
+    g.drawImage(img, 0, 0);
+    if (cdBackTint) {
+      g.globalCompositeOperation = "multiply";
+      g.fillStyle = cdBackTint;
+      g.fillRect(0, 0, c.width, c.height);
+    }
+    // round data area: clear outside the rim and inside the clear hub
+    const r = Math.min(c.width, c.height) / 2;
+    g.globalCompositeOperation = "destination-in";
+    g.beginPath();
+    g.arc(c.width / 2, c.height / 2, r * 0.985, 0, Math.PI * 2);
+    g.arc(c.width / 2, c.height / 2, r * CD_INNER * 0.95, 0, Math.PI * 2, true);
+    g.fill("evenodd");
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, [cdBackTex, cdBackTint]);
+  const cdBackMat = useMemo(() => {
+    if (!cdBackMap) return null;
+    const m = createHoloMaterial({ map: cdBackMap, env: holoEnvRef.current ?? studioEnvTexture() });
+    return m;
+  }, [cdBackMap]);
+  useEffect(() => {
+    if (!cdBackMat) return;
+    cdBackMat.uniforms['uHolo']!.value = 1;
+    cdBackMat.uniforms['uBands']!.value = 14;
+    cdBackMat.uniforms['uGrain']!.value = 0.05;
+    cdBackMat.uniforms['uPattern']!.value = holoPatternIndex.radial;
+    cdBackMat.uniforms['uOverlay']!.value = holoOverlayIndex.none;
+  }, [cdBackMat]);
 
   const metalMaterial = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color("#d7dce0"),
-        metalness: 1,
-        roughness: 0.18,
-        clearcoat: 0.35,
+        color: new THREE.Color(design.shutterColor ?? "#d7dce0"),
+        metalness: design.shutterMetalness ?? 1,
+        roughness: design.shutterRoughness ?? 0.18,
+        clearcoat: 0.35 + (1 - (design.shutterMetalness ?? 1)) * 0.6,
         clearcoatRoughness: 0.12,
+        envMapIntensity: 1 + (design.shutterMetalness ?? 1),
         side: THREE.DoubleSide,
       }),
-    [],
+    [design.shutterColor, design.shutterMetalness, design.shutterRoughness],
   );
 
   const opticalDiscMaterial = useMemo(
@@ -355,6 +371,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
   // procedural studio environment used by the foil shader's reflections
   const holoEnv = useMemo(() => studioEnvTexture(), []);
+  holoEnvRef.current = holoEnv;
   useEffect(() => () => holoEnv.dispose(), [holoEnv]);
 
   const frontHoloMat = useMemo(
@@ -497,7 +514,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       s.vx *= damp;
       s.vy *= damp;
       if (design.autoRotate && Math.abs(s.vy) < 0.0008) s.y += design.autoRotateSpeed * dt;
-      camera.position.lerp(new THREE.Vector3(0, 0, (fit * (cd ? 1.12 : 1.5)) / z), Math.min(1, dt * 3));
+      camera.position.lerp(new THREE.Vector3(0, 0, (fit * (cd ? 1.0 : 1.5)) / z), Math.min(1, dt * 3));
     }
 
     g.rotation.x = s.x;
@@ -506,6 +523,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     // the foil's rainbow is view-dependent: feed it the live camera position
     if (frontHoloMat) frontHoloMat.uniforms['uCamPos']!.value.copy(camera.position);
     if (backHoloMat) backHoloMat.uniforms['uCamPos']!.value.copy(camera.position);
+    if (cdBackMat) cdBackMat.uniforms['uCamPos']!.value.copy(camera.position);
   });
 
   const surfaceGap = 0.0005;
@@ -544,7 +562,24 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         )}
         {cd && cdBackMat && (
           <mesh position={[0, 0, backSurface - surfaceGap * 0.5]} rotation={[0, Math.PI, 0]} material={cdBackMat}>
-            <planeGeometry args={[faceW * (CD_OUTER + 0.04), faceH * (CD_OUTER + 0.04)]} />
+            <planeGeometry args={[faceW, faceH]} />
+          </mesh>
+        )}
+        {cd && (design.cdFrontOpacity ?? 0) > 0 && (
+          <mesh position={[0, 0, frontSurface + surfaceGap * 0.5]} renderOrder={5}>
+            <ringGeometry args={[(faceW / 2) * CD_INNER, (faceW / 2) * CD_OUTER, 128]} />
+            <meshPhysicalMaterial
+              color={design.cdFrontColor ?? "#e8e8e8"}
+              metalness={design.cdFrontMetalness ?? 0}
+              roughness={design.cdFrontRoughness ?? 0.35}
+              clearcoat={1}
+              clearcoatRoughness={0.05}
+              transparent
+              opacity={design.cdFrontOpacity ?? 1}
+              depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={-1}
+            />
           </mesh>
         )}
         {backTex && !cd && (
@@ -594,6 +629,30 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   );
 }
 
+function BackgroundImage({ url }: { url?: string | undefined }) {
+  const { scene } = useThree();
+  useEffect(() => {
+    if (!url) {
+      scene.background = null;
+      return;
+    }
+    let alive = true;
+    let tex: THREE.Texture | null = null;
+    new THREE.TextureLoader().load(url, (t) => {
+      if (!alive) return t.dispose();
+      t.colorSpace = THREE.SRGBColorSpace;
+      tex = t;
+      scene.background = t;
+    });
+    return () => {
+      alive = false;
+      scene.background = null;
+      tex?.dispose();
+    };
+  }, [url, scene]);
+  return null;
+}
+
 export function FloppyScene(props: Props) {
   const [failed, setFailed] = useState(false);
   if (failed)
@@ -636,7 +695,6 @@ export function FloppyScene(props: Props) {
             {(props.design.lights ?? []).map((l) => (
               <Lightformer
                 key={l.id}
-                form="ring"
                 intensity={l.intensity * 0.6}
                 color={l.color}
                 position={[l.x * 9, -l.y * 9, 3 - Math.hypot(l.x, l.y) * 2]}
