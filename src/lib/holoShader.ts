@@ -283,7 +283,7 @@ export function createHoloMaterial(opts: HoloMaterialOptions): THREE.ShaderMater
     fragmentShader: FRAG,
     transparent: true,
     depthWrite: false,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
     polygonOffset: true,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,

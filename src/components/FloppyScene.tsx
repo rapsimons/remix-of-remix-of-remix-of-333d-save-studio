@@ -278,7 +278,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       clearcoatRoughness: Math.max(0.02, design.roughness * 0.4),
       envMapIntensity: 1 + metal * 1.4,
       transparent: true,
-      opacity: cd ? 0.35 : Math.max(design.opacity, metal * 0.9),
+      opacity: cd ? 0.18 : Math.max(design.opacity, metal * 0.9),
       side: THREE.DoubleSide,
     });
   }, [design.color, design.roughness, design.opacity, metal, cd]);
@@ -337,6 +337,10 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     cdBackMat.uniforms['uGrain']!.value = 0.05;
     cdBackMat.uniforms['uPattern']!.value = holoPatternIndex.radial;
     cdBackMat.uniforms['uOverlay']!.value = holoOverlayIndex.none;
+    // diffraction centred on the spindle, like real concentric data tracks
+    cdBackMat.uniforms['uLight']!.value.set(0.5, 0.5);
+    cdBackMat.uniforms['uMetal']!.value = 1;
+    cdBackMat.uniforms['uRough']!.value = 0.04;
   }, [cdBackMat]);
 
   const metalMaterial = useMemo(
@@ -544,7 +548,10 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             <meshStandardMaterial
               map={frontTex}
               transparent
-              roughness={0.45}
+              roughness={0.6}
+              metalness={0}
+              envMapIntensity={0.25}
+              toneMapped={false}
               depthWrite={false}
               polygonOffset
               polygonOffsetFactor={-1}
@@ -588,7 +595,10 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             <meshStandardMaterial
               map={backTex}
               transparent
-              roughness={0.45}
+              roughness={0.6}
+              metalness={0}
+              envMapIntensity={0.25}
+              toneMapped={false}
               depthWrite={false}
               polygonOffset
               polygonOffsetFactor={-1}
@@ -670,7 +680,7 @@ export function FloppyScene(props: Props) {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
       }}
     >
-      <ambientLight intensity={0.72} />
+      <ambientLight intensity={0.4} />
       <directionalLight position={[3, 4, 5]} intensity={1.8} />
       <directionalLight position={[-4, -2, -3]} intensity={0.8} />
       {/* soft gel washes: weak, far away, coming from the direction each dot was placed */}
