@@ -6,6 +6,7 @@ import type { Design } from "@/lib/types";
 import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
 import { cdBackColor, isCd, labelAspect, labelDonut, CD_OUTER, CD_INNER } from "@/lib/media";
+import { createCdBackMaterial, setCdLights } from "@/lib/cdShader";
 import cdModel from "@/assets/cd.glb.asset.json";
 import cdSilver from "@/assets/cd-back-silver.png.asset.json";
 import cdBlack from "@/assets/cd-back-black.png.asset.json";
@@ -301,47 +302,13 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     };
   }, [cd, cdBackUrl]);
   const cdBackTint = backKind === "black" ? null : cdBackColor(design);
-  const cdBackMap = useMemo(() => {
-    const img = cdBackTex?.image as HTMLImageElement | undefined;
-    if (!img) return null;
-    const c = document.createElement("canvas");
-    c.width = img.width;
-    c.height = img.height;
-    const g = c.getContext("2d")!;
-    g.drawImage(img, 0, 0);
-    if (cdBackTint) {
-      g.globalCompositeOperation = "multiply";
-      g.fillStyle = cdBackTint;
-      g.fillRect(0, 0, c.width, c.height);
-    }
-    // round data area: clear outside the rim and inside the clear hub
-    const r = Math.min(c.width, c.height) / 2;
-    g.globalCompositeOperation = "destination-in";
-    g.beginPath();
-    g.arc(c.width / 2, c.height / 2, r * 0.985, 0, Math.PI * 2);
-    g.arc(c.width / 2, c.height / 2, r * CD_INNER * 0.95, 0, Math.PI * 2, true);
-    g.fill("evenodd");
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  }, [cdBackTex, cdBackTint]);
-  const cdBackMat = useMemo(() => {
-    if (!cdBackMap) return null;
-    const m = createHoloMaterial({ map: cdBackMap, env: holoEnvRef.current ?? studioEnvTexture() });
-    return m;
-  }, [cdBackMap]);
+  const cdBackMat = useMemo(() => (cd ? createCdBackMaterial({ inner: CD_INNER }) : null), [cd]);
   useEffect(() => {
     if (!cdBackMat) return;
-    cdBackMat.uniforms['uHolo']!.value = 1;
-    cdBackMat.uniforms['uBands']!.value = 14;
-    cdBackMat.uniforms['uGrain']!.value = 0.05;
-    cdBackMat.uniforms['uPattern']!.value = holoPatternIndex.radial;
-    cdBackMat.uniforms['uOverlay']!.value = holoOverlayIndex.none;
-    // diffraction centred on the spindle, like real concentric data tracks
-    cdBackMat.uniforms['uLight']!.value.set(0.5, 0.5);
-    cdBackMat.uniforms['uMetal']!.value = 1;
-    cdBackMat.uniforms['uRough']!.value = 0.04;
-  }, [cdBackMat]);
+    cdBackMat.uniforms["uTint"]!.value.set(cdBackTint ?? "#ffffff");
+    cdBackMat.uniforms["uDark"]!.value = backKind === "black" ? 1 : 0;
+    setCdLights(cdBackMat, design.lights ?? []);
+  }, [cdBackMat, cdBackTint, backKind, design.lights]);
 
   const metalMaterial = useMemo(
     () =>
