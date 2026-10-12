@@ -265,7 +265,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   const material = useMemo(() => {
     // metal blocks light: the more metallic, the less see-through the shell
     const solid = Math.max(0, Math.min(1, (design.opacity - 0.1) / 0.9));
-    const transmission = cd ? 0.98 : Math.max(0, (1 - metal) * (1 - solid * 0.85));
+    const transmission = cd ? 0 : Math.max(0, (1 - metal) * (1 - solid * 0.85));
     return new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(cd ? "#ffffff" : design.color),
       roughness: cd ? 0.03 : design.roughness,

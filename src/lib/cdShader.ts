@@ -96,7 +96,7 @@ void main() {
     // grating vector is radial: diffraction requires S to lie along it
     float along = dot(S, radial);
     float across = dot(S, tang);
-    float sharp = exp(-across * across * 90.0);
+    float sharp = exp(-across * across * 45.0);
     // first and second order, track pitch ~1.6 um
     for (int m = 1; m <= 2; m++) {
       float lambda = abs(along) * 1.6 / float(m); // in um
