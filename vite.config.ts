@@ -6,10 +6,26 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// The devtools source-inspector stamps data-tsd-source on every JSX element.
+// React Three Fiber treats dashed props as nested paths and crashes on hot
+// reload, so strip the attribute from 3D scene files.
+const stripTsdSourceFromR3F = {
+  name: "strip-tsd-source-r3f",
+  enforce: "post" as const,
+  transform(code: string, id: string) {
+    if (!/src\/components\/(FloppyScene|.*Scene)\.tsx/.test(id)) return null;
+    if (!code.includes("data-tsd-source")) return null;
+    return { code: code.replace(/"data-tsd-source":\s*"[^"]*",?/g, "").replace(/\sdata-tsd-source="[^"]*"/g, ""), map: null };
+  },
+};
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+  },
+  vite: {
+    plugins: [stripTsdSourceFromR3F],
   },
 });
