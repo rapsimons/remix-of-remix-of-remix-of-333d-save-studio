@@ -8,8 +8,6 @@ import { DEFAULT_MODEL_URL } from "@/lib/store";
 import { cdBackColor, isCd, labelAspect, labelDonut, CD_OUTER, CD_INNER } from "@/lib/media";
 import { createCdBackMaterial, setCdLights } from "@/lib/cdShader";
 import cdModel from "@/assets/cd.glb.asset.json";
-import cdSilver from "@/assets/cd-back-silver.png.asset.json";
-import cdBlack from "@/assets/cd-back-black.png.asset.json";
 import {
   createHoloMaterial,
   holoOverlayIndex,
@@ -287,20 +285,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   // CD reflective data layer
   const holoEnvRef = useRef<THREE.Texture | null>(null);
   const backKind = design.cdBackStyle ?? "silver";
-  const cdBackUrl = backKind === "black" ? cdBlack.url : cdSilver.url;
-  const [cdBackTex, setCdBackTex] = useState<THREE.Texture | null>(null);
-  useEffect(() => {
-    if (!cd) return;
-    let alive = true;
-    new THREE.TextureLoader().load(cdBackUrl, (t) => {
-      if (!alive) return t.dispose();
-      t.colorSpace = THREE.SRGBColorSpace;
-      setCdBackTex(t);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [cd, cdBackUrl]);
   const cdBackTint = backKind === "black" ? null : cdBackColor(design);
   const cdBackMat = useMemo(() => (cd ? createCdBackMaterial({ inner: CD_INNER }) : null), [cd]);
   useEffect(() => {
