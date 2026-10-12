@@ -365,7 +365,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const name = mesh.name.toLowerCase();
       if (cd) {
         mesh.material = material;
-        mesh.visible = false; // DEBUGVIS
+        // the moulded body draws a smaller milky disc over the faces; the face layers already form the disc
+        mesh.visible = false;
       } else if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
         mesh.material = opticalDiscMaterial;
       } else if (name.includes("shutter")) {
