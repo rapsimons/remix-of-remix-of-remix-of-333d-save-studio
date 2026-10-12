@@ -4,7 +4,7 @@ import type { Design } from "./types";
 export type MediaType = "floppy" | "cd";
 
 /** CD printable ring, as fractions of the disc radius (124 mm disc). */
-export const CD_OUTER = 0.952; // ~1 mm clear rim
+export const CD_OUTER = 0.985; // thin clear rim, same size as the back data side
 export const CD_INNER = 0.24; // clear centre hub
 
 export const mediaOf = (d: Pick<Design, "mediaType">): MediaType => d.mediaType ?? "floppy";

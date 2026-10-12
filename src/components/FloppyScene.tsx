@@ -6,9 +6,8 @@ import type { Design } from "@/lib/types";
 import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
 import { cdBackColor, isCd, labelAspect, labelDonut, CD_OUTER, CD_INNER } from "@/lib/media";
+import { createCdBackMaterial, setCdLights } from "@/lib/cdShader";
 import cdModel from "@/assets/cd.glb.asset.json";
-import cdSilver from "@/assets/cd-back-silver.png.asset.json";
-import cdBlack from "@/assets/cd-back-black.png.asset.json";
 import {
   createHoloMaterial,
   holoOverlayIndex,
@@ -266,7 +265,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   const material = useMemo(() => {
     // metal blocks light: the more metallic, the less see-through the shell
     const solid = Math.max(0, Math.min(1, (design.opacity - 0.1) / 0.9));
-    const transmission = cd ? 0.98 : Math.max(0, (1 - metal) * (1 - solid * 0.85));
+    const transmission = cd ? 0 : Math.max(0, (1 - metal) * (1 - solid * 0.85));
     return new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(cd ? "#ffffff" : design.color),
       roughness: cd ? 0.03 : design.roughness,
@@ -286,62 +285,14 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   // CD reflective data layer
   const holoEnvRef = useRef<THREE.Texture | null>(null);
   const backKind = design.cdBackStyle ?? "silver";
-  const cdBackUrl = backKind === "black" ? cdBlack.url : cdSilver.url;
-  const [cdBackTex, setCdBackTex] = useState<THREE.Texture | null>(null);
-  useEffect(() => {
-    if (!cd) return;
-    let alive = true;
-    new THREE.TextureLoader().load(cdBackUrl, (t) => {
-      if (!alive) return t.dispose();
-      t.colorSpace = THREE.SRGBColorSpace;
-      setCdBackTex(t);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [cd, cdBackUrl]);
   const cdBackTint = backKind === "black" ? null : cdBackColor(design);
-  const cdBackMap = useMemo(() => {
-    const img = cdBackTex?.image as HTMLImageElement | undefined;
-    if (!img) return null;
-    const c = document.createElement("canvas");
-    c.width = img.width;
-    c.height = img.height;
-    const g = c.getContext("2d")!;
-    g.drawImage(img, 0, 0);
-    if (cdBackTint) {
-      g.globalCompositeOperation = "multiply";
-      g.fillStyle = cdBackTint;
-      g.fillRect(0, 0, c.width, c.height);
-    }
-    // round data area: clear outside the rim and inside the clear hub
-    const r = Math.min(c.width, c.height) / 2;
-    g.globalCompositeOperation = "destination-in";
-    g.beginPath();
-    g.arc(c.width / 2, c.height / 2, r * 0.985, 0, Math.PI * 2);
-    g.arc(c.width / 2, c.height / 2, r * CD_INNER * 0.95, 0, Math.PI * 2, true);
-    g.fill("evenodd");
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  }, [cdBackTex, cdBackTint]);
-  const cdBackMat = useMemo(() => {
-    if (!cdBackMap) return null;
-    const m = createHoloMaterial({ map: cdBackMap, env: holoEnvRef.current ?? studioEnvTexture() });
-    return m;
-  }, [cdBackMap]);
+  const cdBackMat = useMemo(() => (cd ? createCdBackMaterial({ inner: CD_INNER }) : null), [cd]);
   useEffect(() => {
     if (!cdBackMat) return;
-    cdBackMat.uniforms['uHolo']!.value = 1;
-    cdBackMat.uniforms['uBands']!.value = 14;
-    cdBackMat.uniforms['uGrain']!.value = 0.05;
-    cdBackMat.uniforms['uPattern']!.value = holoPatternIndex.radial;
-    cdBackMat.uniforms['uOverlay']!.value = holoOverlayIndex.none;
-    // diffraction centred on the spindle, like real concentric data tracks
-    cdBackMat.uniforms['uLight']!.value.set(0.5, 0.5);
-    cdBackMat.uniforms['uMetal']!.value = 1;
-    cdBackMat.uniforms['uRough']!.value = 0.04;
-  }, [cdBackMat]);
+    cdBackMat.uniforms["uTint"]!.value.set(cdBackTint ?? "#ffffff");
+    cdBackMat.uniforms["uDark"]!.value = backKind === "black" ? 1 : 0;
+    setCdLights(cdBackMat, design.lights ?? []);
+  }, [cdBackMat, cdBackTint, backKind, design.lights]);
 
   const metalMaterial = useMemo(
     () =>
@@ -414,6 +365,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const name = mesh.name.toLowerCase();
       if (cd) {
         mesh.material = material;
+        // the moulded body draws a smaller milky disc over the faces; the face layers already form the disc
+        mesh.visible = false;
       } else if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
         mesh.material = opticalDiscMaterial;
       } else if (name.includes("shutter")) {
