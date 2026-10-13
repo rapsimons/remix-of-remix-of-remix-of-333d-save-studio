@@ -92,10 +92,10 @@ export function Studio() {
         {([
           ["floppy", "Floppy"],
           ["cd", "CD"],
-          ["md", "MiniDisc"],
+          ["minidisc", "MiniDisc"],
           ["ps1", "M.Card"],
         ] as const).map(([k, label]) => {
-          const soon = k === "md" || k === "ps1";
+          const soon = k === "ps1";
           const active = (design.mediaType ?? "floppy") === k;
           return (
             <button

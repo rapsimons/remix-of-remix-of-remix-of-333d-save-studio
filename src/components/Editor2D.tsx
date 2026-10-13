@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { CD_INNER, CD_OUTER, isCd, labelAspect } from "@/lib/media";
+import { CD_INNER, CD_OUTER, isRound, labelAspect } from "@/lib/media";
 import { CD_HOLE } from "@/lib/labelCanvas";
 import { useStudio } from "@/lib/store";
 import type { LabelObject } from "@/lib/types";
@@ -206,7 +206,7 @@ export function Editor2D() {
     }
   }
 
-  const cd = isCd(design);
+  const cd = isRound(design);
   const hole = CD_HOLE * 100;
   const cdMask = `radial-gradient(circle closest-side, transparent ${hole}%, rgba(0,0,0,0.4) ${hole + 0.3}%, rgba(0,0,0,0.4) ${CD_INNER * 100}%, #000 ${CD_INNER * 100 + 0.3}%, #000 ${CD_OUTER * 100}%, rgba(0,0,0,0.25) ${CD_OUTER * 100 + 0.3}%, rgba(0,0,0,0.25) 99.6%, transparent 100%)`;
 

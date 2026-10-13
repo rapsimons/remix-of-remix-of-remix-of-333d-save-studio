@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { FloppyScene } from "./FloppyScene";
+import { MiniDiscScene } from "./MiniDiscScene";
+import { isMiniDisc } from "@/lib/media";
 import { Icon, type IconName } from "./ui/Icon";
 import type { Design } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,9 @@ export function FloppyViewer({
 
   return (
     <div className={cn("relative h-full w-full", className)}>
+      {isMiniDisc(design) ? (
+        <MiniDiscScene design={design} lockX={lockX} lockY={lockY} onDoubleTap={() => setFlat((f) => !f)} />
+      ) : (
       <FloppyScene
         design={design}
         modelUrl={design.modelUrl}
@@ -32,6 +37,7 @@ export function FloppyViewer({
         lockY={lockY}
         onDoubleTap={() => setFlat((f) => !f)}
       />
+      )}
       {lighting && <LightEditor design={design} onDone={() => setLighting(false)} />}
       {!flat && !lighting && (
         <button
@@ -83,6 +89,9 @@ export function FloppyViewer({
       )}
       {immersive && (
         <div className="fixed inset-0 z-50 touch-none bg-background">
+          {isMiniDisc(design) ? (
+            <MiniDiscScene design={design} allowZoom />
+          ) : (
           <FloppyScene
             design={design}
             modelUrl={design.modelUrl}
@@ -91,6 +100,7 @@ export function FloppyViewer({
             lockY={false}
             allowZoom
           />
+          )}
           <span className="pointer-events-none absolute inset-x-0 bottom-5 text-center label-caps text-muted-foreground">
             Drag to spin · pinch to zoom
           </span>
