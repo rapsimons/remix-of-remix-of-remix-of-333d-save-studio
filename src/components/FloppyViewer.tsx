@@ -89,6 +89,9 @@ export function FloppyViewer({
       )}
       {immersive && (
         <div className="fixed inset-0 z-50 touch-none bg-background">
+          {isMiniDisc(design) ? (
+            <MiniDiscScene design={design} allowZoom />
+          ) : (
           <FloppyScene
             design={design}
             modelUrl={design.modelUrl}
@@ -97,6 +100,7 @@ export function FloppyViewer({
             lockY={false}
             allowZoom
           />
+          )}
           <span className="pointer-events-none absolute inset-x-0 bottom-5 text-center label-caps text-muted-foreground">
             Drag to spin · pinch to zoom
           </span>
