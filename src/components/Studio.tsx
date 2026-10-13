@@ -92,10 +92,10 @@ export function Studio() {
         {([
           ["floppy", "Floppy"],
           ["cd", "CD"],
-          ["md", "MiniDisc"],
+          ["minidisc", "MiniDisc"],
           ["ps1", "M.Card"],
         ] as const).map(([k, label]) => {
-          const soon = k === "md" || k === "ps1";
+          const soon = k === "ps1";
           const active = (design.mediaType ?? "floppy") === k;
           return (
             <button
@@ -106,7 +106,7 @@ export function Studio() {
               onClick={() =>
                 !soon &&
                 store.patch((d) => {
-                  d.mediaType = k;
+                  if (k !== "ps1") d.mediaType = k;
                 })
               }
               className={cn(

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { FloppyScene } from "./FloppyScene";
+import { MiniDiscScene } from "./MiniDiscScene";
+import { isMiniDisc } from "@/lib/media";
 import { Icon, type IconName } from "./ui/Icon";
 import type { Design } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,9 @@ export function FloppyViewer({
 
   return (
     <div className={cn("relative h-full w-full", className)}>
+      {isMiniDisc(design) ? (
+        <MiniDiscScene design={design} lockX={lockX} lockY={lockY} onDoubleTap={() => setFlat((f) => !f)} />
+      ) : (
       <FloppyScene
         design={design}
         modelUrl={design.modelUrl}
@@ -32,6 +37,7 @@ export function FloppyViewer({
         lockY={lockY}
         onDoubleTap={() => setFlat((f) => !f)}
       />
+      )}
       {lighting && <LightEditor design={design} onDone={() => setLighting(false)} />}
       {!flat && !lighting && (
         <button
