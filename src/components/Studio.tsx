@@ -106,7 +106,7 @@ export function Studio() {
               onClick={() =>
                 !soon &&
                 store.patch((d) => {
-                  if (k !== "ps1") d.mediaType = k;
+                  d.mediaType = k;
                 })
               }
               className={cn(
