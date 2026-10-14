@@ -95,22 +95,19 @@ export function Studio() {
           ["minidisc", "MiniDisc"],
           ["ps1", "M.Card"],
         ] as const).map(([k, label]) => {
-          const soon = k === "ps1";
           const active = (design.mediaType ?? "floppy") === k;
           return (
             <button
               key={k}
               type="button"
-              disabled={soon}
-              title={soon ? "Coming soon" : undefined}
               onClick={() =>
-                !soon &&
                 store.patch((d) => {
                   d.mediaType = k;
+                  d.modelVariant = "v1";
                 })
               }
               className={cn(
-                "truncate whitespace-nowrap px-1 py-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground disabled:opacity-40",
+                "truncate whitespace-nowrap px-1 py-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground",
                 active && "bg-foreground text-background",
               )}
             >
@@ -119,6 +116,28 @@ export function Studio() {
           );
         })}
       </nav>
+
+      {VARIANTS[design.mediaType ?? "floppy"].length > 0 && (
+        <nav className="flex items-center justify-center gap-1 border-b border-hairline py-1" aria-label="Model version">
+          {VARIANTS[design.mediaType ?? "floppy"].map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() =>
+                store.patch((d) => {
+                  d.modelVariant = v;
+                })
+              }
+              className={cn(
+                "rounded-full border border-hairline px-3 py-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground",
+                (design.modelVariant ?? "v1") === v && "bg-foreground text-background",
+              )}
+            >
+              {v}
+            </button>
+          ))}
+        </nav>
+      )}
 
       {/* mode switch */}
       <nav className="grid grid-cols-3 border-b border-hairline">
