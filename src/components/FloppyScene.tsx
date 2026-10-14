@@ -5,7 +5,7 @@ import * as THREE from "three";
 import type { Design } from "@/lib/types";
 import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
-import { cdBackColor, isCd, labelAspect, labelDonut, CD_OUTER, CD_INNER } from "@/lib/media";
+import { cdBackColor, isCd, labelAspect, labelDonut, modelUrlFor, CD_OUTER, CD_INNER } from "@/lib/media";
 import { createCdBackMaterial, setCdLights } from "@/lib/cdShader";
 import cdModel from "@/assets/cd.glb.asset.json";
 import {
@@ -186,7 +186,7 @@ function normalizeCd(scene: THREE.Object3D) {
 
 function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true, allowZoom = false }: Props) {
   const cd = isCd(design);
-  const gltf = useGLTF(cd ? cdModel.url : modelUrl || DEFAULT_MODEL_URL);
+  const gltf = useGLTF(modelUrlFor(design, cd ? cdModel.url : modelUrl || DEFAULT_MODEL_URL));
   const group = useRef<THREE.Group>(null);
   const spin = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
   const zoom = useRef(1);
