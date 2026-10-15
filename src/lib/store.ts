@@ -19,11 +19,19 @@ const builtinHolo: GalleryItem[] = [
   { id: "holo-valid", name: "Valid", src: holoValid.url, builtin: true },
   { id: "holo-cubes", name: "Cubes", src: holoCubes.url, builtin: true },
 ];
+const cdCaseStickers = import.meta.glob<{ url: string }>("@/assets/cdcase-[0-9]*.png.asset.json", { eager: true, import: "default" });
+const builtinCdCase: GalleryItem[] = Object.keys(cdCaseStickers).sort().map((k, i) => ({
+  id: `cdcase-${String(i + 1).padStart(2, "0")}`,
+  name: `Disc ${i + 1}`,
+  src: cdCaseStickers[k].url,
+  builtin: true,
+}));
 const builtinPaper: GalleryItem[] = [
   { id: "paper-square", name: "Square", src: paperSquare.url, builtin: true },
   { id: "paper-oval", name: "Oval", src: paperOval.url, builtin: true },
   { id: "paper-capsule", name: "Capsule", src: paperCapsule.url, builtin: true },
   { id: "paper-star", name: "Starburst", src: paperStar.url, builtin: true },
+  ...builtinCdCase,
 ];
 
 type State = {
