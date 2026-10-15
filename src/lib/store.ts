@@ -23,7 +23,7 @@ const cdCaseStickers = import.meta.glob<{ url: string }>("@/assets/cdcase-[0-9]*
 const builtinCdCase: GalleryItem[] = Object.keys(cdCaseStickers).sort().map((k, i) => ({
   id: `cdcase-${String(i + 1).padStart(2, "0")}`,
   name: `Disc ${i + 1}`,
-  src: cdCaseStickers[k].url,
+  src: cdCaseStickers[k]?.url ?? "",
   builtin: true,
 }));
 const builtinPaper: GalleryItem[] = [
