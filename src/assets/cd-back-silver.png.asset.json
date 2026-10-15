@@ -1,11 +1,11 @@
 {
-  "version": 1,
   "asset_id": "f8a7d168-1d08-445b-b095-4467cec4388d",
-  "project_id": "b80f0400-61fb-4585-967c-56ce8b5805bf",
-  "url": "/__l5e/assets-v1/f8a7d168-1d08-445b-b095-4467cec4388d/cd-back-silver.png",
-  "r2_key": "a/v1/b80f0400-61fb-4585-967c-56ce8b5805bf/f8a7d168-1d08-445b-b095-4467cec4388d/cd-back-silver.png",
-  "original_filename": "cd-back-silver.png",
-  "size": 533790,
   "content_type": "image/png",
-  "created_at": "2026-10-05T06:30:57Z"
+  "created_at": "2026-10-05T06:30:57Z",
+  "original_filename": "cd-back-silver.png",
+  "project_id": "cbc8ba17-0d19-472c-834e-9d2a5b115b55",
+  "r2_key": "a/v1/cbc8ba17-0d19-472c-834e-9d2a5b115b55/f8a7d168-1d08-445b-b095-4467cec4388d/cd-back-silver.png",
+  "size": 533790,
+  "url": "/__l5e/assets-v1/f8a7d168-1d08-445b-b095-4467cec4388d/cd-back-silver.png",
+  "version": 1
 }

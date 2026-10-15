@@ -1,11 +1,11 @@
 {
-  "version": 1,
   "asset_id": "5300bab0-e723-4ff0-a39d-f897a2fce438",
-  "project_id": "b80f0400-61fb-4585-967c-56ce8b5805bf",
-  "url": "/__l5e/assets-v1/5300bab0-e723-4ff0-a39d-f897a2fce438/mcard.glb",
-  "r2_key": "a/v1/b80f0400-61fb-4585-967c-56ce8b5805bf/5300bab0-e723-4ff0-a39d-f897a2fce438/mcard.glb",
-  "original_filename": "mcard.glb",
-  "size": 3986032,
   "content_type": "model/gltf-binary",
-  "created_at": "2026-10-12T09:29:44Z"
+  "created_at": "2026-10-12T09:29:44Z",
+  "original_filename": "mcard.glb",
+  "project_id": "cbc8ba17-0d19-472c-834e-9d2a5b115b55",
+  "r2_key": "a/v1/cbc8ba17-0d19-472c-834e-9d2a5b115b55/5300bab0-e723-4ff0-a39d-f897a2fce438/mcard.glb",
+  "size": 3986032,
+  "url": "/__l5e/assets-v1/5300bab0-e723-4ff0-a39d-f897a2fce438/mcard.glb",
+  "version": 1
 }
