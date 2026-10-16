@@ -358,24 +358,67 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     design.holoOverlay,
   ]);
 
+  const clearPlasticMaterial = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color("#ffffff"),
+        metalness: 0,
+        roughness: 0.02,
+        transmission: 1,
+        thickness: 0.05,
+        ior: 1.58,
+        clearcoat: 1,
+        clearcoatRoughness: 0.02,
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
+
+  const variant = design.modelVariant ?? "v1";
+  const ps1 = (design.mediaType ?? "floppy") === "ps1";
+
   useEffect(() => {
     object.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
+      // remember the material the 3D file shipped with
+      if (!mesh.userData["origMat"]) mesh.userData["origMat"] = mesh.material;
+      const orig = mesh.userData["origMat"] as THREE.Material;
+      const mat = (orig?.name ?? "").toLowerCase();
       const name = mesh.name.toLowerCase();
-      if (cd) {
-        mesh.material = material;
-        // the moulded body draws a smaller milky disc over the faces; the face layers already form the disc
-        mesh.visible = false;
+      mesh.visible = true;
+      if (ps1) {
+        mesh.material = orig;
+      } else if (cd) {
+        if (variant === "v1") {
+          // the face layers form the procedural disc
+          mesh.material = material;
+          mesh.visible = false;
+        } else if (variant === "v2") {
+          mesh.material = opticalDiscMaterial;
+        } else if (mat.includes("clearplastic")) {
+          mesh.material = clearPlasticMaterial;
+        } else if (mat.includes("label")) {
+          // printed label is drawn by the artwork layer on top
+          mesh.visible = false;
+        } else {
+          // metal foil + data bottom: mirror reflective
+          mesh.material = opticalDiscMaterial;
+        }
+      } else if (mat.includes("metal") || mat === "ring" || name.includes("shutter")) {
+        mesh.material = metalMaterial;
+      } else if (mat.includes("sticker") || mat === "sony" || mat.startsWith("material.")) {
+        mesh.material = orig;
       } else if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
         mesh.material = opticalDiscMaterial;
-      } else if (name.includes("shutter")) {
-        mesh.material = metalMaterial;
       } else {
         mesh.material = material;
       }
     });
-  }, [object, material, metalMaterial, opticalDiscMaterial, cd]);
+  }, [object, material, metalMaterial, opticalDiscMaterial, clearPlasticMaterial, cd, ps1, variant]);
 
   // pointer gestures (drag to spin, pinch / wheel to zoom)
   useEffect(() => {
@@ -504,7 +547,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
               roughness={0.6}
               metalness={0}
               envMapIntensity={0.25}
-              toneMapped={false}
               depthWrite={false}
               polygonOffset
               polygonOffsetFactor={-1}
@@ -551,7 +593,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
               roughness={0.6}
               metalness={0}
               envMapIntensity={0.25}
-              toneMapped={false}
               depthWrite={false}
               polygonOffset
               polygonOffsetFactor={-1}
