@@ -385,8 +385,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
       // remember the material the 3D file shipped with
-      if (!mesh.userData.origMat) mesh.userData.origMat = mesh.material;
-      const orig = mesh.userData.origMat as THREE.Material;
+      if (!mesh.userData["origMat"]) mesh.userData["origMat"] = mesh.material;
+      const orig = mesh.userData["origMat"] as THREE.Material;
       const mat = (orig?.name ?? "").toLowerCase();
       const name = mesh.name.toLowerCase();
       mesh.visible = true;
