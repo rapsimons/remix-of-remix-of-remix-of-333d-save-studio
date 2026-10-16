@@ -92,7 +92,7 @@ export function Studio() {
         {([
           ["floppy", "Floppy"],
           ["cd", "CD"],
-          ["minidisc", "MiniDisc"],
+          ["minidisc", "Case"],
           ["ps1", "M.Card"],
         ] as const).map(([k, label]) => {
           const active = (design.mediaType ?? "floppy") === k;
