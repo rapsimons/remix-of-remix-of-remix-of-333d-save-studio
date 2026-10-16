@@ -547,7 +547,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
               roughness={0.6}
               metalness={0}
               envMapIntensity={0.25}
-              toneMapped={false}
               depthWrite={false}
               polygonOffset
               polygonOffsetFactor={-1}
@@ -594,7 +593,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
               roughness={0.6}
               metalness={0}
               envMapIntensity={0.25}
-              toneMapped={false}
               depthWrite={false}
               polygonOffset
               polygonOffsetFactor={-1}
