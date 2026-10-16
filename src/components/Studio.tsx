@@ -117,9 +117,9 @@ export function Studio() {
         })}
       </nav>
 
-      {VARIANTS[design.mediaType ?? "floppy"].length > 0 && (
+      {(VARIANTS[design.mediaType ?? "floppy"] ?? []).length > 0 && (
         <nav className="flex items-center justify-center gap-1 border-b border-hairline py-1" aria-label="Model version">
-          {VARIANTS[design.mediaType ?? "floppy"].map((v) => (
+          {(VARIANTS[design.mediaType ?? "floppy"] ?? []).map((v) => (
             <button
               key={v}
               type="button"
