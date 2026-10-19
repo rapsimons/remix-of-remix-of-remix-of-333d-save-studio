@@ -7,6 +7,8 @@ import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
 import { cdBackColor, isCd, labelAspect, labelDonut, modelUrlFor, CD_OUTER, CD_INNER } from "@/lib/media";
 import { createCdBackMaterial, setCdLights } from "@/lib/cdShader";
+import { createDiscMaterial, discGeometry, setDiscLights } from "@/lib/discShader";
+import type { SceneLight } from "@/lib/types";
 import cdModel from "@/assets/cd.glb.asset.json";
 import {
   createHoloMaterial,
@@ -394,20 +396,17 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         // plastic casing follows the shell colour/see-through controls
         mesh.material = name.includes("cube") || mat.includes("004") ? material : orig;
       } else if (cd) {
+        // one optical disc (front print + data side) is drawn by OpticalDisc;
+        // the model only contributes its clear polycarbonate, so there is
+        // never a second disc face fighting the first
         if (variant === "v1") {
-          // the face layers form the procedural disc
-          mesh.material = material;
           mesh.visible = false;
         } else if (variant === "v2") {
-          mesh.material = opticalDiscMaterial;
+          mesh.material = clearPlasticMaterial;
         } else if (mat.includes("clearplastic")) {
           mesh.material = clearPlasticMaterial;
-        } else if (mat.includes("label")) {
-          // printed label is drawn by the artwork layer on top
-          mesh.visible = false;
         } else {
-          // metal foil + data bottom: mirror reflective
-          mesh.material = opticalDiscMaterial;
+          mesh.visible = false;
         }
       } else if (mat.includes("metal") || mat === "ring" || name.includes("shutter")) {
         mesh.material = metalMaterial;
@@ -539,7 +538,17 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         position={[a.offsetX, a.offsetY, 0]}
       >
         <primitive object={object} />
-        {frontTex && (
+        {cd && (
+          <OpticalDisc
+            radius={faceW / 2}
+            thick={Math.min(0.02, Math.max(0.006, (frontSurface - backSurface) * 0.6))}
+            art={frontTex}
+            tint={cdBackTint ?? "#ffffff"}
+            dark={backKind === "black"}
+            lights={design.lights ?? []}
+          />
+        )}
+        {frontTex && !cd && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>
             <planeGeometry args={[faceW, faceH]} />
             <meshStandardMaterial
@@ -560,11 +569,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             material={frontHoloMat}
             renderOrder={20}
           >
-            <planeGeometry args={[faceW, faceH]} />
-          </mesh>
-        )}
-        {cd && cdBackMat && (
-          <mesh position={[0, 0, backSurface - surfaceGap * 0.5]} rotation={[0, Math.PI, 0]} material={cdBackMat}>
             <planeGeometry args={[faceW, faceH]} />
           </mesh>
         )}
@@ -632,6 +636,22 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       </group>
     </group>
   );
+}
+
+/** Single real optical disc: printed front + Jingfu-style diffraction data side, one shared diameter. */
+function OpticalDisc({ radius, thick, art, tint, dark, lights }: {
+  radius: number; thick: number; art: THREE.Texture | null; tint: string; dark: boolean; lights: SceneLight[];
+}) {
+  const geo = useMemo(() => discGeometry(radius, radius * (7.5 / 60), thick), [radius, thick]);
+  const mat = useMemo(() => createDiscMaterial(radius, CD_INNER * 60, CD_OUTER * 60), [radius]);
+  useEffect(() => {
+    mat.uniforms["uArt"]!.value = art;
+    mat.uniforms["uHasArt"]!.value = art ? 1 : 0;
+    (mat.uniforms["uTint"]!.value as THREE.Color).set(tint).multiplyScalar(dark ? 0.12 : 1);
+    setDiscLights(mat, lights);
+  }, [mat, art, tint, dark, lights]);
+  useEffect(() => () => { geo.dispose(); mat.dispose(); }, [geo, mat]);
+  return <mesh geometry={geo} material={mat} />;
 }
 
 function BackgroundImage({ url }: { url?: string | undefined }) {
