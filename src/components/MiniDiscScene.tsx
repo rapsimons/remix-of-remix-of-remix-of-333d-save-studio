@@ -1,4 +1,6 @@
-import CaseStage from "./cd-case/CaseStage";
+import CaseStageRaw from "./cd-case/CaseStage";
+import type { ComponentType } from "react";
+const CaseStage = CaseStageRaw as unknown as ComponentType<{ disc: typeof DISC; spin?: boolean; paused?: boolean }>;
 import { DISC } from "./cd-case/disc";
 import type { Design } from "@/lib/types";
 
