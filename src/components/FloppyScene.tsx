@@ -7,6 +7,8 @@ import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
 import { cdBackColor, isCd, labelAspect, labelDonut, modelUrlFor, CD_OUTER, CD_INNER } from "@/lib/media";
 import { createCdBackMaterial, setCdLights } from "@/lib/cdShader";
+import { createDiscMaterial, discGeometry, setDiscLights } from "@/lib/discShader";
+import type { SceneLight } from "@/lib/types";
 import cdModel from "@/assets/cd.glb.asset.json";
 import {
   createHoloMaterial,
@@ -634,6 +636,22 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       </group>
     </group>
   );
+}
+
+/** Single real optical disc: printed front + Jingfu-style diffraction data side, one shared diameter. */
+function OpticalDisc({ radius, thick, art, tint, dark, lights }: {
+  radius: number; thick: number; art: THREE.Texture | null; tint: string; dark: boolean; lights: SceneLight[];
+}) {
+  const geo = useMemo(() => discGeometry(radius, radius * (7.5 / 60), thick), [radius, thick]);
+  const mat = useMemo(() => createDiscMaterial(radius, CD_INNER * 60, CD_OUTER * 60), [radius]);
+  useEffect(() => {
+    mat.uniforms["uArt"]!.value = art;
+    mat.uniforms["uHasArt"]!.value = art ? 1 : 0;
+    (mat.uniforms["uTint"]!.value as THREE.Color).set(tint).multiplyScalar(dark ? 0.12 : 1);
+    setDiscLights(mat, lights);
+  }, [mat, art, tint, dark, lights]);
+  useEffect(() => () => { geo.dispose(); mat.dispose(); }, [geo, mat]);
+  return <mesh geometry={geo} material={mat} />;
 }
 
 function BackgroundImage({ url }: { url?: string | undefined }) {
