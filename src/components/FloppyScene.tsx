@@ -394,20 +394,17 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         // plastic casing follows the shell colour/see-through controls
         mesh.material = name.includes("cube") || mat.includes("004") ? material : orig;
       } else if (cd) {
+        // one optical disc (front print + data side) is drawn by OpticalDisc;
+        // the model only contributes its clear polycarbonate, so there is
+        // never a second disc face fighting the first
         if (variant === "v1") {
-          // the face layers form the procedural disc
-          mesh.material = material;
           mesh.visible = false;
         } else if (variant === "v2") {
-          mesh.material = opticalDiscMaterial;
+          mesh.material = clearPlasticMaterial;
         } else if (mat.includes("clearplastic")) {
           mesh.material = clearPlasticMaterial;
-        } else if (mat.includes("label")) {
-          // printed label is drawn by the artwork layer on top
-          mesh.visible = false;
         } else {
-          // metal foil + data bottom: mirror reflective
-          mesh.material = opticalDiscMaterial;
+          mesh.visible = false;
         }
       } else if (mat.includes("metal") || mat === "ring" || name.includes("shutter")) {
         mesh.material = metalMaterial;
