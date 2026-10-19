@@ -570,11 +570,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             <planeGeometry args={[faceW, faceH]} />
           </mesh>
         )}
-        {cd && cdBackMat && (
-          <mesh position={[0, 0, backSurface - surfaceGap * 0.5]} rotation={[0, Math.PI, 0]} material={cdBackMat}>
-            <planeGeometry args={[faceW, faceH]} />
-          </mesh>
-        )}
         {cd && (design.cdFrontOpacity ?? 0) > 0 && (
           <mesh position={[0, 0, frontSurface + surfaceGap * 0.5]} renderOrder={5}>
             <ringGeometry args={[(faceW / 2) * CD_INNER, (faceW / 2) * CD_OUTER, 128]} />
