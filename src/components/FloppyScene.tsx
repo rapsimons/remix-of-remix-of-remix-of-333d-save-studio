@@ -536,7 +536,17 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         position={[a.offsetX, a.offsetY, 0]}
       >
         <primitive object={object} />
-        {frontTex && (
+        {cd && (
+          <OpticalDisc
+            radius={faceW / 2}
+            thick={Math.min(0.02, Math.max(0.006, (frontSurface - backSurface) * 0.6))}
+            art={frontTex}
+            tint={cdBackTint ?? "#ffffff"}
+            dark={backKind === "black"}
+            lights={design.lights ?? []}
+          />
+        )}
+        {frontTex && !cd && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>
             <planeGeometry args={[faceW, faceH]} />
             <meshStandardMaterial
