@@ -391,7 +391,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const name = mesh.name.toLowerCase();
       mesh.visible = true;
       if (ps1) {
-        mesh.material = orig;
+        // plastic casing follows the shell colour/see-through controls
+        mesh.material = name.includes("cube") || mat.includes("004") ? material : orig;
       } else if (cd) {
         if (variant === "v1") {
           // the face layers form the procedural disc

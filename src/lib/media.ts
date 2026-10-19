@@ -12,7 +12,7 @@ export type ModelVariant = "v1" | "v2" | "v3";
 export const VARIANTS: Record<MediaType, ModelVariant[]> = {
   floppy: ["v1", "v2"],
   cd: ["v1", "v2", "v3"],
-  minidisc: ["v1", "v2", "v3"],
+  minidisc: [],
   ps1: [],
 };
 
