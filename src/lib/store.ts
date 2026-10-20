@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { idb } from "./idb";
+import { migrateAlignments, updateAlignment } from "./modelAlignment";
 import { createDesign, uid, type Design, type LabelObject, type Side, type MenuLink, type Alignment } from "./types";
 import holoValid from "@/assets/holo-valid.png.asset.json";
 import holoCubes from "@/assets/holo-cubes.png.asset.json";
@@ -79,7 +80,7 @@ type Actions = {
 const clone = (d: Design): Design => JSON.parse(JSON.stringify(d)) as Design;
 
 export const useStudio = create<State & Actions>((set, get) => ({
-  design: createDesign(),
+  design: migrateAlignments(createDesign()),
   side: "front",
   selectedId: null,
   past: [],
@@ -110,8 +111,8 @@ export const useStudio = create<State & Actions>((set, get) => ({
       paper: [...builtinPaper, ...paper],
       fonts,
       models: [{ id: "builtin", name: "3.5\u2033 HD Floppy", src: DEFAULT_MODEL_URL, builtin: true }, ...models],
-      saved: saved.sort((a, b) => b.updatedAt - a.updatedAt),
-      ...(current ? { design: current } : {}),
+      saved: saved.map(migrateAlignments).sort((a, b) => b.updatedAt - a.updatedAt),
+      ...(current ? { design: migrateAlignments(current) } : {}),
       ready: true,
     });
     // keep the working disc saved so a reload restores it
@@ -138,7 +139,7 @@ export const useStudio = create<State & Actions>((set, get) => ({
   },
 
   setDesign(d) {
-    set({ design: d, past: [], future: [], selectedId: null });
+    set({ design: migrateAlignments(d), past: [], future: [], selectedId: null });
   },
 
   undo() {
@@ -210,7 +211,7 @@ export const useStudio = create<State & Actions>((set, get) => ({
 
   setAlignment(a) {
     get().commit((d) => {
-      d.alignment = { ...d.alignment, ...a };
+      updateAlignment(d, a);
     });
   },
 
@@ -260,7 +261,7 @@ export const useStudio = create<State & Actions>((set, get) => ({
 
   loadDesign(id) {
     const d = get().saved.find((s) => s.id === id);
-    if (d) set({ design: clone(d), past: [], future: [], selectedId: null });
+    if (d) set({ design: migrateAlignments(clone(d)), past: [], future: [], selectedId: null });
   },
 
   async deleteDesign(id) {
@@ -269,7 +270,7 @@ export const useStudio = create<State & Actions>((set, get) => ({
   },
 
   newDesign() {
-    set({ design: createDesign(), past: [], future: [], selectedId: null });
+    set({ design: migrateAlignments(createDesign()), past: [], future: [], selectedId: null });
   },
 }));
 
