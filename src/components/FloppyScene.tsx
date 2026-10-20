@@ -6,9 +6,9 @@ import type { Design } from "@/lib/types";
 import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
 import { cdBackColor, isCd, labelAspect, labelDonut, modelUrlFor, CD_OUTER, CD_INNER } from "@/lib/media";
-import { createCdBackMaterial, setCdLights } from "@/lib/cdShader";
-import { createDiscMaterial, discGeometry, setDiscLights } from "@/lib/discShader";
-import type { SceneLight } from "@/lib/types";
+import { alignmentFor } from "@/lib/modelAlignment";
+import { createNativeDiscMaterial, setDiscLights } from "@/lib/discShader";
+
 import cdModel from "@/assets/cd.glb.asset.json";
 import {
   createHoloMaterial,
@@ -98,12 +98,27 @@ function normalize(scene: THREE.Object3D) {
   const probe = new THREE.Vector3();
   const qRoll = new THREE.Quaternion();
   const zAxis = new THREE.Vector3(0, 0, 1);
+  // Sample once instead of visiting 130,000 casing vertices 91 times.
+  const samples: THREE.Vector3[] = [];
+  clone.traverse((node) => {
+    const mesh = node as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const pos = mesh.geometry.getAttribute("position");
+    if (!pos) return;
+    const step = Math.max(1, Math.ceil(pos.count / 256));
+    for (let i = 0; i < pos.count; i += step)
+      samples.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld));
+  });
+  const sampleBox = new THREE.Box3();
+  const point = new THREE.Vector3();
   for (let deg = -45; deg <= 45; deg += 1) {
     const rad = (deg * Math.PI) / 180;
     qRoll.setFromAxisAngle(zAxis, rad);
     aligned.quaternion.copy(qRoll).multiply(qBase);
     aligned.updateMatrixWorld(true);
-    new THREE.Box3().setFromObject(aligned, true).getSize(probe);
+    sampleBox.makeEmpty();
+    for (const v of samples) sampleBox.expandByPoint(point.copy(v).applyQuaternion(aligned.quaternion));
+    sampleBox.getSize(probe);
     const area = probe.x * probe.y;
     if (area < bestArea) {
       bestArea = area;
@@ -167,23 +182,35 @@ function normalize(scene: THREE.Object3D) {
 }
 
 function normalizeCd(scene: THREE.Object3D) {
-  const clone = scene.clone(true);
-  clone.updateMatrixWorld(true);
-  const frontNormal = dominantNormal(clone).negate();
-  const aligned = new THREE.Group();
-  aligned.add(clone);
-  aligned.quaternion.setFromUnitVectors(frontNormal, new THREE.Vector3(0, 0, 1));
-  aligned.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(aligned);
+  // All uploaded CD meshes are authored in local XY. Export parent transforms
+  // (FBX tilt, camera/light offsets and unit conversion) are not part of the disc.
+  const object = new THREE.Group();
+  scene.traverse((node) => {
+    const source = node as THREE.Mesh;
+    if (!source.isMesh) return;
+    const mesh = new THREE.Mesh(source.geometry.clone(), source.material);
+    mesh.name = source.name;
+    mesh.userData["origMat"] = source.material;
+    object.add(mesh);
+  });
+  const box = new THREE.Box3().setFromObject(object, true);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const scale = 2 / Math.max(size.x, size.y);
-  const outer = new THREE.Group();
-  aligned.position.sub(center);
-  outer.add(aligned);
-  outer.scale.setScalar(scale);
-  const d = Math.max(size.x, size.y) * scale;
-  return { object: outer, frontSurface: (size.z * scale) / 2, backSurface: -(size.z * scale) / 2, faceW: d, faceH: d };
+  object.children.forEach((node) => {
+    const mesh = node as THREE.Mesh;
+    mesh.geometry.translate(-center.x, -center.y, -center.z);
+    mesh.geometry.scale(scale, scale, scale);
+    const normal = mesh.geometry.getAttribute("normal");
+    const pos = mesh.geometry.getAttribute("position");
+    const faces = new Float32Array(pos.count);
+    for (let i = 0; i < pos.count; i++) {
+      const nz = normal?.getZ(i) ?? 1;
+      faces[i] = nz > 0.5 ? 0 : nz < -0.5 ? 1 : 2;
+    }
+    mesh.geometry.setAttribute("aFace", new THREE.BufferAttribute(faces, 1));
+  });
+  return { object, frontSurface: size.z * scale / 2, backSurface: -size.z * scale / 2, faceW: 2, faceH: 2 };
 }
 
 function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive = true, allowZoom = false }: Props) {
@@ -273,7 +300,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       roughness: cd ? 0.03 : design.roughness,
       metalness: cd ? 0 : metal,
       transmission,
-      thickness: 0.5,
+      thickness: design.mediaType === "ps1" ? 0.05 : 0.5,
       ior: cd ? 1.58 : 1.45,
       clearcoat: 0.6 + metal * 0.4,
       clearcoatRoughness: Math.max(0.02, design.roughness * 0.4),
@@ -281,20 +308,41 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       transparent: true,
       opacity: cd ? 0.18 : Math.max(design.opacity, metal * 0.9),
       side: THREE.DoubleSide,
+      depthWrite: design.opacity > 0.95,
     });
-  }, [design.color, design.roughness, design.opacity, metal, cd]);
+  }, [design.color, design.roughness, design.opacity, design.mediaType, metal, cd]);
 
   // CD reflective data layer
   const holoEnvRef = useRef<THREE.Texture | null>(null);
   const backKind = design.cdBackStyle ?? "silver";
   const cdBackTint = backKind === "black" ? null : cdBackColor(design);
-  const cdBackMat = useMemo(() => (cd ? createCdBackMaterial({ inner: CD_INNER }) : null), [cd]);
+  const nativeMaterials = useMemo(() => {
+    const materials = new Map<THREE.Mesh, THREE.ShaderMaterial>();
+    if (!cd) return materials;
+    object.traverse((node) => {
+      const mesh = node as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const orig = mesh.userData["origMat"] as THREE.MeshStandardMaterial | undefined;
+      if (orig?.name.toLowerCase().includes("clearplastic")) return;
+      materials.set(mesh, createNativeDiscMaterial(faceW / 2, orig?.map ?? null));
+    });
+    return materials;
+  }, [object, cd, faceW]);
   useEffect(() => {
-    if (!cdBackMat) return;
-    cdBackMat.uniforms["uTint"]!.value.set(cdBackTint ?? "#ffffff");
-    cdBackMat.uniforms["uDark"]!.value = backKind === "black" ? 1 : 0;
-    setCdLights(cdBackMat, design.lights ?? []);
-  }, [cdBackMat, cdBackTint, backKind, design.lights]);
+    nativeMaterials.forEach((m) => {
+      const art = m.uniforms["uArt"];
+      const hasArt = m.uniforms["uHasArt"];
+      const tint = m.uniforms["uTint"];
+      if (art) art.value = frontTex;
+      if (hasArt) hasArt.value = frontTex ? 1 : 0;
+      if (tint) (tint.value as THREE.Color).set(cdBackTint ?? "#3a3a3a");
+      setDiscLights(m, design.lights ?? []);
+    });
+  }, [nativeMaterials, frontTex, cdBackTint, design.lights]);
+  useEffect(() => () => {
+    nativeMaterials.forEach((m) => m.dispose());
+    if (cd) object.traverse((n) => { if ((n as THREE.Mesh).isMesh) (n as THREE.Mesh).geometry.dispose(); });
+  }, [nativeMaterials, cd, object]);
 
   const metalMaterial = useMemo(
     () =>
@@ -379,20 +427,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     [],
   );
 
-  const labelMaterial = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color("#ffffff"),
-        roughness: 0.35,
-        metalness: 0,
-        clearcoat: 1,
-        clearcoatRoughness: 0.05,
-        map: frontTex ?? null,
-        transparent: true,
-      }),
-    [frontTex],
-  );
-
   const variant = design.modelVariant ?? "v1";
   const ps1 = (design.mediaType ?? "floppy") === "ps1";
 
@@ -411,23 +445,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         // casing = Plane_Material.001 meshes; pins/label recess keep their own look
         mesh.material = mat.includes("material.001") || name.includes("material.001") ? material : orig;
       } else if (cd) {
-        // one optical disc (front print + data side) is drawn by OpticalDisc;
-        // the model only contributes its clear polycarbonate, so there is
-        // never a second disc face fighting the first
-        if (variant === "v1") {
-          // V1: procedural Jingfu-style optical disc (OpticalDisc)
-          mesh.visible = false;
-        } else if (variant === "v2") {
-          // V2: the file's own advanced PBR disc material
-          mesh.material = orig;
-        } else if (mat.includes("clearplastic")) {
-          mesh.material = clearPlasticMaterial;
-        } else if (mat.includes("label")) {
-          mesh.material = labelMaterial;
-        } else {
-          // metalfoil + discBottom: mirror data side
-          mesh.material = opticalDiscMaterial;
-        }
+        // Each variant keeps every native vertex and its embedded front print.
+        mesh.material = mat.includes("clearplastic") ? clearPlasticMaterial : nativeMaterials.get(mesh) ?? orig;
       } else if (mat.includes("metal") || mat === "ring" || name.includes("shutter")) {
         mesh.material = metalMaterial;
       } else if (mat.includes("sticker") || mat === "sony" || mat.startsWith("material.")) {
@@ -438,7 +457,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         mesh.material = material;
       }
     });
-  }, [object, material, metalMaterial, opticalDiscMaterial, clearPlasticMaterial, labelMaterial, cd, ps1, variant]);
+  }, [object, material, metalMaterial, opticalDiscMaterial, clearPlasticMaterial, nativeMaterials, cd, ps1, variant]);
 
   // pointer gestures (drag to spin, pinch / wheel to zoom)
   useEffect(() => {
@@ -543,11 +562,11 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     // the foil's rainbow is view-dependent: feed it the live camera position
     if (frontHoloMat) frontHoloMat.uniforms['uCamPos']!.value.copy(camera.position);
     if (backHoloMat) backHoloMat.uniforms['uCamPos']!.value.copy(camera.position);
-    if (cdBackMat) cdBackMat.uniforms['uCamPos']!.value.copy(camera.position);
+
   });
 
   const surfaceGap = 0.0005;
-  const a = design.alignment;
+  const a = alignmentFor(design);
   const rad = Math.PI / 180;
 
   return (
@@ -558,17 +577,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         position={[a.offsetX, a.offsetY, 0]}
       >
         <primitive object={object} />
-        {cd && variant === "v1" && (
-          <OpticalDisc
-            radius={faceW / 2}
-            thick={Math.min(0.02, Math.max(0.006, (frontSurface - backSurface) * 0.6))}
-            art={frontTex}
-            tint={cdBackTint ?? "#ffffff"}
-            dark={backKind === "black"}
-            lights={design.lights ?? []}
-          />
-        )}
-        {frontTex && (!cd || variant === "v2") && (
+        {frontTex && !cd && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>
             <planeGeometry args={[faceW, faceH]} />
             <meshStandardMaterial
@@ -658,22 +667,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   );
 }
 
-/** Single real optical disc: printed front + Jingfu-style diffraction data side, one shared diameter. */
-function OpticalDisc({ radius, thick, art, tint, dark, lights }: {
-  radius: number; thick: number; art: THREE.Texture | null; tint: string; dark: boolean; lights: SceneLight[];
-}) {
-  const geo = useMemo(() => discGeometry(radius, radius * (7.5 / 60), thick), [radius, thick]);
-  const mat = useMemo(() => createDiscMaterial(radius, CD_INNER * 60, CD_OUTER * 60), [radius]);
-  useEffect(() => {
-    mat.uniforms["uArt"]!.value = art;
-    mat.uniforms["uHasArt"]!.value = art ? 1 : 0;
-    (mat.uniforms["uTint"]!.value as THREE.Color).set(tint).multiplyScalar(dark ? 0.12 : 1);
-    setDiscLights(mat, lights);
-  }, [mat, art, tint, dark, lights]);
-  useEffect(() => () => { geo.dispose(); mat.dispose(); }, [geo, mat]);
-  return <mesh geometry={geo} material={mat} />;
-}
-
 function BackgroundImage({ url }: { url?: string | undefined }) {
   const { scene } = useThree();
   useEffect(() => {
@@ -700,6 +693,7 @@ function BackgroundImage({ url }: { url?: string | undefined }) {
 
 export function FloppyScene(props: Props) {
   const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [props.design.mediaType, props.design.modelVariant, props.modelUrl]);
   if (failed)
     return (
       <div className="flex h-full items-center justify-center text-xs tracking-widest uppercase text-muted-foreground">
@@ -709,15 +703,15 @@ export function FloppyScene(props: Props) {
   return (
     <Canvas
       camera={{ position: [0, 0, 4.2], fov: 42 }}
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
       }}
     >
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[3, 4, 5]} intensity={1.8} />
-      <directionalLight position={[-4, -2, -3]} intensity={0.8} />
+      <ambientLight intensity={0.25} />
+      <directionalLight position={[3, 4, 5]} intensity={1.1} />
+      <directionalLight position={[-4, -2, -3]} intensity={0.45} />
       {/* soft gel washes: weak, far away, coming from the direction each dot was placed */}
       {(props.design.lights ?? []).map((l) => (
         <hemisphereLight
@@ -731,11 +725,11 @@ export function FloppyScene(props: Props) {
       <BackgroundImage url={props.design.bgImage} />
       <Suspense fallback={null}>
         <ErrorGuard onError={() => setFailed(true)}>
-          <Floppy {...props} />
+          <Floppy key={modelUrlFor(props.design, isCd(props.design) ? cdModel.url : props.modelUrl || DEFAULT_MODEL_URL)} {...props} />
           <Environment resolution={256} key={JSON.stringify(props.design.lights ?? [])}>
-            <Lightformer intensity={3} position={[0, 4, 2]} scale={[8, 8, 1]} />
-            <Lightformer intensity={1.8} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
-            <Lightformer intensity={1.8} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />
+            <Lightformer intensity={1.5} position={[0, 4, 2]} scale={[8, 8, 1]} />
+            <Lightformer intensity={0.8} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
+            <Lightformer intensity={0.8} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />
             {/* huge, dim, off-screen gel panels — reflect as smooth colour falloff, never a hotspot */}
             {(props.design.lights ?? []).map((l) => (
               <Lightformer

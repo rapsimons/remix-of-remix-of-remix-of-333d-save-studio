@@ -246,12 +246,28 @@ export function createDiscMaterial(R: number, artIn: number, printOut: number) {
 }
 
 export function setDiscLights(m: THREE.ShaderMaterial, lights: SceneLight[]) {
-  const L = m.uniforms["uL"]!.value as THREE.Vector3[];
-  const C = m.uniforms["uLc"]!.value as THREE.Color[];
+  const L = m.uniforms["uL"]?.value as THREE.Vector3[] | undefined;
+  const C = m.uniforms["uLc"]?.value as THREE.Color[] | undefined;
+  if (!L || !C) return;
   const list = lights.slice(0, 4);
   list.forEach((l, i) => {
-    L[i]!.set(l.x, -l.y, 0.8).normalize();
-    C[i]!.set(l.color).multiplyScalar(l.intensity);
+    L[i]?.set(l.x, -l.y, 0.8).normalize();
+    C[i]?.set(l.color).multiplyScalar(l.intensity);
   });
-  m.uniforms["uLn"]!.value = list.length;
+  const count = m.uniforms["uLn"];
+  if (count) count.value = list.length;
+}
+
+/** The optical effect on a supplied GLB's vertices, retaining its original UV print. */
+export function createNativeDiscMaterial(radius: number, original: THREE.Texture | null) {
+  const material = createDiscMaterial(radius, 14.4, 59.1);
+  material.uniforms["uNativeArt"] = { value: original };
+  material.uniforms["uHasNativeArt"] = { value: original ? 1 : 0 };
+  material.vertexShader = VERT.replace("attribute float aFace;", "attribute float aFace; varying vec2 vOriginalUv;")
+    .replace("vLocal = position;", "vLocal = position; vOriginalUv = uv;");
+  material.fragmentShader = FRAG.replace("uniform sampler2D uArt;", "uniform sampler2D uArt; uniform sampler2D uNativeArt; uniform float uHasNativeArt; varying vec2 vOriginalUv;")
+    .replace("vec4 art = texture2D(uArt, uv) * uHasArt;", "vec4 base = texture2D(uNativeArt, vOriginalUv) * uHasNativeArt; vec4 overlay = texture2D(uArt, uv) * uHasArt; vec4 art = vec4(mix(base.rgb, overlay.rgb, overlay.a), max(base.a, overlay.a));")
+    .replace("art.rgb * lights(N)", "art.rgb * (0.82 + 0.18 * max(dot(N, KEY), 0.0))")
+    .replace("min(studio(R), vec3(1.6)) * 0.5 + uTint * vec3(0.42, 0.44, 0.47) * (0.6 + 0.4 * max(dot(N, KEY), 0.0))", "min(studio(R), vec3(2.0)) * 0.48 + uTint * vec3(0.10, 0.11, 0.12)");
+  return material;
 }

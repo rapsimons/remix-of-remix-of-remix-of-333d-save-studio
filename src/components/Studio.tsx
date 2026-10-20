@@ -11,6 +11,7 @@ import { useStudio } from "@/lib/store";
 import { useTheme } from "@/lib/useTheme";
 import { encodeDesign } from "@/lib/share";
 import { renderLabel } from "@/lib/labelCanvas";
+import { alignmentFor } from "@/lib/modelAlignment";
 import { defaultAlignment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CD_BACKS, cdBackColor, isCd, VARIANTS, type CdBackStyle } from "@/lib/media";
@@ -21,6 +22,7 @@ type Mode = "design" | "view" | "align";
 export function Studio() {
   const store = useStudio();
   const { design, side, selectedId } = store;
+  const alignment = alignmentFor(design);
   const { theme, toggle } = useTheme();
   const [mode, setMode] = useState<Mode>("design");
   const [panel, setPanel] = useState<Panel>(null);
@@ -82,10 +84,28 @@ export function Studio() {
           className="min-w-0 flex-1 bg-transparent label-caps outline-none"
           aria-label="Design name"
         />
+        <Btn icon="image" aria-label="Background" title="Background" onClick={() => toggleDrawer("bg")} />
         <button type="button" onClick={toggle} aria-label="Theme">
           <Icon name={theme === "dark" ? "sun" : "moon"} />
         </button>
       </header>
+
+      {drawer === "bg" && <Drawer title="Background" open onToggle={() => toggleDrawer("bg")}>
+                <div className="grid grid-cols-2 gap-1">
+                  <Btn icon="image" label="Upload" onClick={() => bgRef.current?.click()} />
+                  <Btn icon="delete" label="Remove" disabled={!design.bgImage}
+                    onClick={() => store.patch((d) => void delete d.bgImage)} />
+                </div>
+                <input ref={bgRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    const r = new FileReader();
+                    r.onload = () => store.patch((d) => void (d.bgImage = String(r.result)));
+                    r.readAsDataURL(f);
+                    e.target.value = "";
+                  }} />
+      </Drawer>}
 
       {/* media switch */}
       <nav className="grid grid-cols-4 border-b border-hairline" aria-label="Media type">
@@ -494,7 +514,7 @@ export function Studio() {
 
         {mode === "view" && (
           <div className="flex h-full flex-col">
-            <div className="min-h-[300px] flex-1">
+            <div className="min-h-[220px] flex-1">
               <FloppyViewer
                 design={design}
                 lockX={lockX}
@@ -507,7 +527,7 @@ export function Studio() {
                 }}
               />
             </div>
-            <div className="max-h-[50svh] space-y-1.5 overflow-y-auto border-t border-hairline p-2">
+            <div className="max-h-[30svh] shrink-0 space-y-1.5 overflow-y-auto border-t border-hairline p-2">
               <Drawer title="Motion" open={drawer === "motion"} onToggle={() => toggleDrawer("motion")}>
                 <div className="grid grid-cols-4 gap-1">
                   <Btn icon="lock" label="Lock X" active={lockX} onClick={() => setLockX((v) => !v)} />
@@ -590,22 +610,7 @@ export function Studio() {
                   onChange={(v) => store.patch((d) => void (d.holoGrain = v))} />
               </Drawer>
 
-              <Drawer title="Background" open={drawer === "bg"} onToggle={() => toggleDrawer("bg")}>
-                <div className="grid grid-cols-2 gap-1">
-                  <Btn icon="image" label="Upload" onClick={() => bgRef.current?.click()} />
-                  <Btn icon="delete" label="Remove" disabled={!design.bgImage}
-                    onClick={() => store.patch((d) => void delete d.bgImage)} />
-                </div>
-                <input ref={bgRef} type="file" accept="image/*" className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
-                    const r = new FileReader();
-                    r.onload = () => store.patch((d) => void (d.bgImage = String(r.result)));
-                    r.readAsDataURL(f);
-                    e.target.value = "";
-                  }} />
-              </Drawer>
+
             </div>
           </div>
         )}
@@ -624,21 +629,21 @@ export function Studio() {
                 label="Rotate X"
                 min={-180}
                 max={180}
-                value={design.alignment.rotX}
+                value={alignment.rotX}
                 onChange={(v) => store.setAlignment({ rotX: v })}
               />
               <Slider
                 label="Rotate Y"
                 min={-180}
                 max={180}
-                value={design.alignment.rotY}
+                value={alignment.rotY}
                 onChange={(v) => store.setAlignment({ rotY: v })}
               />
               <Slider
                 label="Rotate Z"
                 min={-180}
                 max={180}
-                value={design.alignment.rotZ}
+                value={alignment.rotZ}
                 onChange={(v) => store.setAlignment({ rotZ: v })}
               />
               <Slider
@@ -646,7 +651,7 @@ export function Studio() {
                 min={0.5}
                 max={1.6}
                 step={0.01}
-                value={design.alignment.scale}
+                value={alignment.scale}
                 onChange={(v) => store.setAlignment({ scale: v })}
               />
               <Slider
@@ -654,7 +659,7 @@ export function Studio() {
                 min={-0.5}
                 max={0.5}
                 step={0.01}
-                value={design.alignment.offsetX}
+                value={alignment.offsetX}
                 onChange={(v) => store.setAlignment({ offsetX: v })}
               />
               <Slider
@@ -662,7 +667,7 @@ export function Studio() {
                 min={-0.5}
                 max={0.5}
                 step={0.01}
-                value={design.alignment.offsetY}
+                value={alignment.offsetY}
                 onChange={(v) => store.setAlignment({ offsetY: v })}
               />
             </div>

@@ -76,6 +76,8 @@ export type Design = {
   autoRotate: boolean;
   autoRotateSpeed: number;
   alignment: Alignment;
+  /** Alignment stored separately for each physical model and version. */
+  modelAlignments?: Record<string, Alignment>;
   modelUrl?: string;
   /** holographic foil look for holo stickers */
   holoPattern?: "linear" | "radial" | "patches";
