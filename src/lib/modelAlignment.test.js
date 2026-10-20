@@ -9,8 +9,8 @@ test("saving CD v2 alignment leaves CD v1/v3 and both floppies unchanged", () =>
   updateAlignment(d, { rotX: 27, offsetX: 0.3 });
   const restored = JSON.parse(JSON.stringify(d));
   expect(alignmentFor(restored).rotX).toBe(27);
-  for (const mediaType of ["cd", "floppy"] as const) {
-    for (const modelVariant of ["v1", "v2", "v3"] as const) {
+  for (const mediaType of ["cd", "floppy"]) {
+    for (const modelVariant of ["v1", "v2", "v3"]) {
       if (mediaType === "cd" && modelVariant === "v2") continue;
       expect(alignmentFor({ ...restored, mediaType, modelVariant }).rotX).toBe(0);
       expect(alignmentFor({ ...restored, mediaType, modelVariant }).offsetX).toBe(0);
