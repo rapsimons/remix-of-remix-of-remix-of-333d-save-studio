@@ -379,6 +379,20 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     [],
   );
 
+  const labelMaterial = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color("#ffffff"),
+        roughness: 0.35,
+        metalness: 0,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05,
+        map: frontTex ?? null,
+        transparent: true,
+      }),
+    [frontTex],
+  );
+
   const variant = design.modelVariant ?? "v1";
   const ps1 = (design.mediaType ?? "floppy") === "ps1";
 
@@ -394,19 +408,25 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       mesh.visible = true;
       if (ps1) {
         // plastic casing follows the shell colour/see-through controls
-        mesh.material = name.includes("cube") || mat.includes("004") ? material : orig;
+        // casing = Plane_Material.001 meshes; pins/label recess keep their own look
+        mesh.material = mat.includes("material.001") || name.includes("material.001") ? material : orig;
       } else if (cd) {
         // one optical disc (front print + data side) is drawn by OpticalDisc;
         // the model only contributes its clear polycarbonate, so there is
         // never a second disc face fighting the first
         if (variant === "v1") {
+          // V1: procedural Jingfu-style optical disc (OpticalDisc)
           mesh.visible = false;
         } else if (variant === "v2") {
-          mesh.material = clearPlasticMaterial;
+          // V2: the file's own advanced PBR disc material
+          mesh.material = orig;
         } else if (mat.includes("clearplastic")) {
           mesh.material = clearPlasticMaterial;
+        } else if (mat.includes("label")) {
+          mesh.material = labelMaterial;
         } else {
-          mesh.visible = false;
+          // metalfoil + discBottom: mirror data side
+          mesh.material = opticalDiscMaterial;
         }
       } else if (mat.includes("metal") || mat === "ring" || name.includes("shutter")) {
         mesh.material = metalMaterial;
@@ -418,7 +438,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         mesh.material = material;
       }
     });
-  }, [object, material, metalMaterial, opticalDiscMaterial, clearPlasticMaterial, cd, ps1, variant]);
+  }, [object, material, metalMaterial, opticalDiscMaterial, clearPlasticMaterial, labelMaterial, cd, ps1, variant]);
 
   // pointer gestures (drag to spin, pinch / wheel to zoom)
   useEffect(() => {
@@ -538,7 +558,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         position={[a.offsetX, a.offsetY, 0]}
       >
         <primitive object={object} />
-        {cd && (
+        {cd && variant === "v1" && (
           <OpticalDisc
             radius={faceW / 2}
             thick={Math.min(0.02, Math.max(0.006, (frontSurface - backSurface) * 0.6))}
@@ -548,7 +568,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             lights={design.lights ?? []}
           />
         )}
-        {frontTex && !cd && (
+        {frontTex && (!cd || variant === "v2") && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>
             <planeGeometry args={[faceW, faceH]} />
             <meshStandardMaterial
