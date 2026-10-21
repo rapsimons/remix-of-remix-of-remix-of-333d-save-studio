@@ -28,26 +28,15 @@ const STUDIO = /* glsl */ `
     return band(q, 0.48, 0.07, 0.02) + band(q, 1.08, 0.14, 0.03) + band(q, -0.56, 0.08, 0.02) +
       0.8 * band(q, -1.25, 0.15, 0.03);
   }
+  // smooth, featureless surround: no windows, bars or panels to reflect —
+  // only the soft key and the user's gel lights show up in the disc
   vec3 room(vec3 d) {
     d = normalize(d);
-    vec2 p = d.xy / max(abs(d.z), 0.08);
-    vec3 dim = vec3(0.02, 0.021, 0.026);
-    if (d.z < 0.0) {
-      vec3 c = vec3(0.1, 0.103, 0.112) * (1.0 - 0.5 * smoothstep(0.4, 1.6, length(p)));
-      c += vec3(0.8) * (1.0 - smoothstep(0.05, 0.14, length(p)));
-      c *= 1.0 - 0.97 * max(flags(p.x), flags(p.y));
-      c += vec3(2.4, 2.6, 3.0) * (hot(p.x) + hot(p.y));
-      return mix(dim, c, smoothstep(0.0, 0.2, -d.z));
-    }
-    vec3 c = dim * (0.5 + 0.5 * smoothstep(-1.2, 1.6, p.y));
-    c += vec3(0.38) * smoothstep(-0.7, 0.8, p.y) * (1.0 - smoothstep(0.5, 1.0, length(p)));
-    c += vec3(1.0, 0.99, 0.97) * 24.0 * box(p, vec2(-0.86, 0.3), vec2(0.065, 0.85), 0.035);
-    c += vec3(0.96, 0.98, 1.0) * 20.0 * box(p, vec2(1.06, 0.04), vec2(0.06, 1.15), 0.03);
-    c += vec3(1.0) * 13.0 * box(p, vec2(0.05, 1.28), vec2(1.25, 0.055), 0.03);
-    c += vec3(0.92, 0.94, 0.97) * 2.4 * box(p, vec2(0.1, -1.05), vec2(1.15, 0.24), 0.28);
-    c *= 1.0 - 0.92 * box(p, vec2(-0.2, 0.5), vec2(0.055, 1.4), 0.02);
-    c *= 1.0 - 0.85 * box(p, vec2(0.62, -0.35), vec2(0.04, 0.9), 0.02);
-    return mix(dim, c, smoothstep(0.0, 0.2, d.z));
+    vec3 dim = vec3(0.03, 0.032, 0.036);
+    float up = smoothstep(-0.6, 1.0, d.y);
+    vec3 c = dim + vec3(0.32) * up;
+    c += vec3(1.6) * pow(max(dot(d, normalize(vec3(-0.4, 0.6, 0.7))), 0.0), 24.0);
+    return c;
   }
   vec3 studio(vec3 d) { return room(d); }
   vec3 glare(vec3 d) { return max(studio(d) - vec3(0.45), 0.0); }

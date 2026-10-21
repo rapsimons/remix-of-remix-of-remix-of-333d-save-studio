@@ -548,6 +548,8 @@ export function Studio() {
                 <>
                   <Drawer title="Disc front" open={drawer === "cdfront"} onToggle={() => toggleDrawer("cdfront")}>
                     <ColorRow label="Print color" value={design.cdFrontColor ?? "#e8e8e8"}
+                      none={(design.cdFrontOpacity ?? 0) === 0}
+                      onNone={(off) => store.patch((d) => void (d.cdFrontOpacity = off ? 0 : d.cdFrontOpacity || 1))}
                       onChange={(v) => store.patch((d) => { d.cdFrontColor = v; if (!d.cdFrontOpacity) d.cdFrontOpacity = 1; })} />
                     <Slider label="Solid ↔ clear" min={0} max={1} step={0.05} value={design.cdFrontOpacity ?? 0}
                       onChange={(v) => store.patch((d) => void (d.cdFrontOpacity = v))} />
@@ -570,7 +572,9 @@ export function Studio() {
               ) : (
                 <>
                   <Drawer title="Shell" open={drawer === "shell"} onToggle={() => toggleDrawer("shell")}>
-                    <ColorRow label="Color" value={design.color} onChange={(v) => store.patch((d) => void (d.color = v))} />
+                    <ColorRow label="Color" value={design.color} none={!!design.shellNone}
+                      onNone={(v) => store.patch((d) => void (d.shellNone = v))}
+                      onChange={(v) => store.patch((d) => void (d.color = v))} />
                     <Slider label="Transparency" min={0.1} max={1} step={0.05} value={design.opacity}
                       onChange={(v) => store.patch((d) => void (d.opacity = v))} />
                     <Slider label="Reflectiveness" min={0} max={1} step={0.01} value={design.metalness ?? 0}
@@ -578,8 +582,23 @@ export function Studio() {
                     <Slider label="Frost" min={0} max={0.6} step={0.01} value={design.roughness}
                       onChange={(v) => store.patch((d) => void (d.roughness = v))} />
                   </Drawer>
+                  {design.mediaType === "ps1" && (
+                    <Drawer title="Print & label" open={drawer === "mcprint"} onToggle={() => toggleDrawer("mcprint")}>
+                      <div className="grid grid-cols-2 gap-1">
+                        <Btn label="PlayStation text" active={design.mcLogo !== false}
+                          onClick={() => store.patch((d) => void (d.mcLogo = d.mcLogo === false))} />
+                        <Btn label="Paper label" active={design.mcLabel !== false}
+                          onClick={() => store.patch((d) => void (d.mcLabel = d.mcLabel === false))} />
+                      </div>
+                      <ColorRow label="Label color" value={design.mcLabelColor ?? "#ffffff"}
+                        none={!design.mcLabelColor}
+                        onNone={(off) => store.patch((d) => { if (off) delete d.mcLabelColor; else d.mcLabelColor = "#ffffff"; })}
+                        onChange={(v) => store.patch((d) => void (d.mcLabelColor = v))} />
+                    </Drawer>
+                  )}
                   <Drawer title="Metal parts" open={drawer === "metal"} onToggle={() => toggleDrawer("metal")}>
-                    <ColorRow label="Color" value={design.shutterColor ?? "#d7dce0"}
+                    <ColorRow label="Color" value={design.shutterColor ?? "#d7dce0"} none={!!design.shutterNone}
+                      onNone={(v) => store.patch((d) => void (d.shutterNone = v))}
                       onChange={(v) => store.patch((d) => void (d.shutterColor = v))} />
                     <Slider label="Solid ↔ metallic" min={0} max={1} step={0.01} value={design.shutterMetalness ?? 1}
                       onChange={(v) => store.patch((d) => void (d.shutterMetalness = v))} />
@@ -768,14 +787,21 @@ export function Studio() {
   );
 }
 
-function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function ColorRow({ label, value, onChange, none, onNone }: {
+  label: string; value: string; onChange: (v: string) => void;
+  /** when provided, shows an on/off "None" toggle (original look) */
+  none?: boolean; onNone?: (v: boolean) => void;
+}) {
   return (
     <Field label={label}>
       <div className="flex gap-2">
-        <input type="color" aria-label={`${label} picker`} value={value}
-          className="h-9 w-14 shrink-0 cursor-pointer border border-hairline bg-background"
-          onChange={(e) => onChange(e.target.value)} />
-        <input aria-label={`${label} hex`} key={value} className={inputClass} defaultValue={value}
+        {onNone && (
+          <Btn label={none ? "Off" : "On"} active={!none} onClick={() => onNone(!none)} aria-label={`${label} on/off`} />
+        )}
+        <input type="color" aria-label={`${label} picker`} value={value} disabled={none}
+          className="h-9 w-14 shrink-0 cursor-pointer border border-hairline bg-background disabled:opacity-30"
+          onChange={(e) => { onNone?.(false); onChange(e.target.value); }} />
+        <input aria-label={`${label} hex`} key={value} className={inputClass} defaultValue={value} disabled={none}
           onChange={(e) => {
             const v = e.target.value.trim();
             if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v.toLowerCase());

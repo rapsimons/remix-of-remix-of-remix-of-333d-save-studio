@@ -8,6 +8,7 @@ import paperOval from "@/assets/paper-oval.png.asset.json";
 import paperStar from "@/assets/paper-starburst.png.asset.json";
 import paperSquare from "@/assets/paper-square.png.asset.json";
 import paperCapsule from "@/assets/paper-capsule.png.asset.json";
+import floppyLabel from "@/assets/paper-floppy-label.svg";
 import floppyGlb from "@/assets/floppy.glb.asset.json";
 
 export const DEFAULT_MODEL_URL = floppyGlb.url;
@@ -32,6 +33,7 @@ const builtinPaper: GalleryItem[] = [
   { id: "paper-oval", name: "Oval", src: paperOval.url, builtin: true },
   { id: "paper-capsule", name: "Capsule", src: paperCapsule.url, builtin: true },
   { id: "paper-star", name: "Starburst", src: paperStar.url, builtin: true },
+  { id: "paper-floppy-label", name: "Floppy label", src: floppyLabel, builtin: true },
   ...builtinCdCase,
 ];
 
