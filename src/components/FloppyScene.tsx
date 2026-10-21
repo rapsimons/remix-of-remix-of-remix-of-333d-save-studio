@@ -323,8 +323,25 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const mesh = node as THREE.Mesh;
       if (!mesh.isMesh) return;
       const orig = mesh.userData["origMat"] as THREE.MeshStandardMaterial | undefined;
-      if (orig?.name.toLowerCase().includes("clearplastic")) return;
-      materials.set(mesh, createNativeDiscMaterial(faceW / 2, orig?.map ?? null));
+      const n = orig?.name.toLowerCase() ?? "";
+      if (n.includes("clearplastic")) return;
+      const m = createNativeDiscMaterial(faceW / 2, orig?.map ?? null);
+      m.toneMapped = false; // keep printed fronts at their true colours
+      if (n === "label") {
+        // V3 printed label shares the foil's top plane — draw it on top
+        m.polygonOffset = true;
+        m.polygonOffsetFactor = -4;
+        m.polygonOffsetUnits = -4;
+      }
+      if (n === "metalfoil") {
+        // the foil only shows as the reflective data side, never over the label
+        const f = mesh.geometry.getAttribute("aFace");
+        if (f) { for (let i = 0; i < f.count; i++) if (f.getX(i) === 0) f.setX(i, 1); f.needsUpdate = true; }
+        m.polygonOffset = true;
+        m.polygonOffsetFactor = 2;
+        m.polygonOffsetUnits = 2;
+      }
+      materials.set(mesh, m);
     });
     return materials;
   }, [object, cd, faceW]);
@@ -429,6 +446,29 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
   const variant = design.modelVariant ?? "v1";
   const ps1 = (design.mediaType ?? "floppy") === "ps1";
+  const shellNone = !!design.shellNone;
+  const shutterNone = !!design.shutterNone;
+  const mcLogo = design.mcLogo !== false;
+  const mcLabel = design.mcLabel !== false;
+  const mcLabelColor = design.mcLabelColor;
+
+  // Memory Card casing keeps its original PlayStation print when enabled
+  const psShellMaterial = useMemo(() => {
+    if (!ps1) return null;
+    let map: THREE.Texture | null = null;
+    object.traverse((o) => {
+      const orig = (o as THREE.Mesh).userData?.["origMat"] as THREE.MeshStandardMaterial | undefined;
+      if (!map && orig?.name?.toLowerCase().includes("material.001") && orig.map) map = orig.map;
+    });
+    const m = material.clone();
+    if (mcLogo && map) m.map = map;
+    return m;
+  }, [ps1, object, material, mcLogo]);
+
+  const labelMaterial = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color(mcLabelColor ?? "#ffffff"), roughness: 0.8, side: THREE.DoubleSide }),
+    [mcLabelColor],
+  );
 
   useEffect(() => {
     object.traverse((o) => {
@@ -441,23 +481,31 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const name = mesh.name.toLowerCase();
       mesh.visible = true;
       if (ps1) {
-        // plastic casing follows the shell colour/see-through controls
-        // casing = Plane_Material.001 meshes; pins/label recess keep their own look
-        mesh.material = mat.includes("material.001") || name.includes("material.001") ? material : orig;
+        if (mat.includes("material.001")) {
+          mesh.material = shellNone ? orig : psShellMaterial ?? material;
+        } else if (mat.includes("material.002")) {
+          mesh.visible = mcLabel;
+          mesh.material = mcLabelColor ? labelMaterial : orig;
+        } else mesh.material = orig;
       } else if (cd) {
         // Each variant keeps every native vertex and its embedded front print.
         mesh.material = mat.includes("clearplastic") ? clearPlasticMaterial : nativeMaterials.get(mesh) ?? orig;
       } else if (mat.includes("metal") || mat === "ring" || name.includes("shutter")) {
-        mesh.material = metalMaterial;
-      } else if (mat.includes("sticker") || mat === "sony" || mat.startsWith("material.")) {
+        mesh.material = shutterNone ? orig : metalMaterial;
+      } else if (mat.includes("sticker")) {
+        // built-in paper label lives in the Paper sticker gallery instead
+        mesh.visible = variant !== "v2";
+        mesh.material = orig;
+      } else if (mat === "sony" || mat.startsWith("material.")) {
         mesh.material = orig;
       } else if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
         mesh.material = opticalDiscMaterial;
       } else {
-        mesh.material = material;
+        mesh.material = shellNone ? orig : material;
       }
     });
-  }, [object, material, metalMaterial, opticalDiscMaterial, clearPlasticMaterial, nativeMaterials, cd, ps1, variant]);
+  }, [object, material, metalMaterial, opticalDiscMaterial, clearPlasticMaterial, nativeMaterials, cd, ps1, variant,
+    shellNone, shutterNone, psShellMaterial, labelMaterial, mcLabel, mcLabelColor]);
 
   // pointer gestures (drag to spin, pinch / wheel to zoom)
   useEffect(() => {
@@ -727,9 +775,8 @@ export function FloppyScene(props: Props) {
         <ErrorGuard onError={() => setFailed(true)}>
           <Floppy key={modelUrlFor(props.design, isCd(props.design) ? cdModel.url : props.modelUrl || DEFAULT_MODEL_URL)} {...props} />
           <Environment resolution={256} key={JSON.stringify(props.design.lights ?? [])}>
-            <Lightformer intensity={1.5} position={[0, 4, 2]} scale={[8, 8, 1]} />
-            <Lightformer intensity={0.8} color="#dfe6ee" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 3, 1]} />
-            <Lightformer intensity={0.8} color="#ffffff" position={[5, -1, 1]} rotation-y={-Math.PI / 2} scale={[16, 3, 1]} />
+            {/* one large soft key only — no strip panels that read as a room in the disc */}
+            <Lightformer form="circle" intensity={isCd(props.design) ? 0.6 : 1.2} position={[0, 4, 3]} scale={[10, 10, 1]} />
             {/* huge, dim, off-screen gel panels — reflect as smooth colour falloff, never a hotspot */}
             {(props.design.lights ?? []).map((l) => (
               <Lightformer
