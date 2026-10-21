@@ -104,6 +104,10 @@ export type Design = {
   shutterRoughness?: number;
   /** image shown behind the 3D model (data URL) */
   bgImage?: string;
+  /** how strongly the background image reflects in the models (0-2) */
+  reflectStrength?: number;
+  /** 0 = sharp mirror, 1 = very blurred reflection */
+  reflectBlur?: number;
   /** "no colour": use the model's original material instead of a tint */
   shellNone?: boolean;
   shutterNone?: boolean;

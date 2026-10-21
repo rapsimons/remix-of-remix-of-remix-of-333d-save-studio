@@ -105,6 +105,12 @@ export function Studio() {
                     r.readAsDataURL(f);
                     e.target.value = "";
                   }} />
+                <Slider label="Reflection" min={0} max={2} step={0.05}
+                  value={design.reflectStrength ?? 1}
+                  onChange={(v) => store.patch((d) => void (d.reflectStrength = v))} />
+                <Slider label="Blur" min={0} max={1} step={0.02}
+                  value={design.reflectBlur ?? 0.3}
+                  onChange={(v) => store.patch((d) => void (d.reflectBlur = v))} />
       </Drawer>}
 
       {/* media switch */}

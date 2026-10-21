@@ -38,7 +38,16 @@ const STUDIO = /* glsl */ `
     c += vec3(1.6) * pow(max(dot(d, normalize(vec3(-0.4, 0.6, 0.7))), 0.0), 24.0);
     return c;
   }
-  vec3 studio(vec3 d) { return room(d); }
+  // the uploaded background image, seen as a screen-facing reflection
+  vec3 envRefl(vec3 d) {
+    d = normalize(d);
+    vec2 euv = clamp(d.xy * 0.5 + 0.5, 0.0, 1.0);
+    vec3 c = textureLod(uEnv, euv, uEnvBlur * 9.0).rgb;
+    return c * c * uEnvStr * 1.4; // to linear-ish, so bright parts glint
+  }
+  vec3 studio(vec3 d) {
+    return room(d) * (1.0 - 0.6 * uHasEnv) + envRefl(d) * uHasEnv;
+  }
   vec3 glare(vec3 d) { return max(studio(d) - vec3(0.45), 0.0); }
   const vec3 KEY = vec3(-0.625, 0.218, 0.75);
   const vec3 STRIP = vec3(0.725, 0.028, 0.688);
@@ -74,6 +83,10 @@ const VERT = /* glsl */ `
 
 const FRAG = /* glsl */ `
   uniform sampler2D uArt;
+  uniform sampler2D uEnv;
+  uniform float uHasEnv;
+  uniform float uEnvStr;
+  uniform float uEnvBlur;
   uniform float uHasArt;
   uniform float uR;
   uniform float uArtIn;
