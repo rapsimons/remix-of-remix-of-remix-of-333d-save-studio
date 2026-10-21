@@ -104,6 +104,13 @@ export type Design = {
   shutterRoughness?: number;
   /** image shown behind the 3D model (data URL) */
   bgImage?: string;
+  /** "no colour": use the model's original material instead of a tint */
+  shellNone?: boolean;
+  shutterNone?: boolean;
+  /** Memory Card: original PlayStation print and paper label */
+  mcLogo?: boolean;
+  mcLabel?: boolean;
+  mcLabelColor?: string;
   updatedAt: number;
 };
 
