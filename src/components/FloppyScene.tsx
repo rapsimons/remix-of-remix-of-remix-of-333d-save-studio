@@ -350,6 +350,15 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     });
     return materials;
   }, [object, cd, faceW]);
+  // the uploaded background image, as a texture the disc shader can reflect
+  const bgTex = useMemo(() => {
+    if (!design.bgImage) return null;
+    const t = new THREE.TextureLoader().load(design.bgImage);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, [design.bgImage]);
+  useEffect(() => () => bgTex?.dispose(), [bgTex]);
+
   useEffect(() => {
     nativeMaterials.forEach((m) => {
       const art = m.uniforms["uArt"];
@@ -358,9 +367,17 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       if (art) art.value = frontTex;
       if (hasArt) hasArt.value = frontTex ? 1 : 0;
       if (tint) (tint.value as THREE.Color).set(cdBackTint ?? "#3a3a3a");
+      const env = m.uniforms["uEnv"];
+      const hasEnv = m.uniforms["uHasEnv"];
+      const envStr = m.uniforms["uEnvStr"];
+      const envBlur = m.uniforms["uEnvBlur"];
+      if (env) env.value = bgTex;
+      if (hasEnv) hasEnv.value = bgTex ? 1 : 0;
+      if (envStr) envStr.value = design.reflectStrength ?? 1;
+      if (envBlur) envBlur.value = design.reflectBlur ?? 0.3;
       setDiscLights(m, design.lights ?? []);
     });
-  }, [nativeMaterials, frontTex, cdBackTint, design.lights]);
+  }, [nativeMaterials, frontTex, cdBackTint, design.lights, bgTex, design.reflectStrength, design.reflectBlur]);
   useEffect(() => () => {
     nativeMaterials.forEach((m) => m.dispose());
     if (cd) object.traverse((n) => { if ((n as THREE.Mesh).isMesh) (n as THREE.Mesh).geometry.dispose(); });
@@ -501,6 +518,10 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         // built-in paper label lives in the Paper sticker gallery instead
         mesh.visible = variant !== "v2";
         mesh.material = orig;
+      } else if (mat.startsWith("material.") && (mesh.geometry.getAttribute("position")?.count ?? 0) <= 8) {
+        // floppy-v2 ships a dark full-face quad floating in front of the disk
+        // (4 verts, material "Material.001") — a ghost layer, never show it
+        mesh.visible = false;
       } else if (mat === "sony" || mat.startsWith("material.")) {
         mesh.material = orig;
       } else if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
