@@ -352,7 +352,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       materials.set(mesh, m);
     });
     return materials;
-  }, [object, cd, faceW]);
+  }, [object, cd, faceW, design.modelVariant]);
   // the uploaded background image, as a texture the disc shader can reflect
   const bgTex = useMemo(() => {
     if (!design.bgImage) return null;
