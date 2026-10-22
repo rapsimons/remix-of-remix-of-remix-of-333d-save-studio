@@ -181,7 +181,7 @@ function normalize(scene: THREE.Object3D) {
   return { object: outer, frontSurface, backSurface, faceW: size.x * scale, faceH: size.y * scale };
 }
 
-function normalizeCd(scene: THREE.Object3D) {
+function normalizeCd(scene: THREE.Object3D, flip = false) {
   // All uploaded CD meshes are authored in local XY. Export parent transforms
   // (FBX tilt, camera/light offsets and unit conversion) are not part of the disc.
   const object = new THREE.Group();
@@ -193,6 +193,9 @@ function normalizeCd(scene: THREE.Object3D) {
     mesh.userData["origMat"] = source.material;
     object.add(mesh);
   });
+  // some exports (CD v2) are authored print-side-down: turn them around so
+  // the printed face looks at the camera like the others
+  if (flip) object.children.forEach((node) => (node as THREE.Mesh).geometry.rotateY(Math.PI));
   const box = new THREE.Box3().setFromObject(object, true);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
@@ -228,8 +231,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
 
   const { object, frontSurface, backSurface, faceW, faceH } = useMemo(
-    () => (cd ? normalizeCd(gltf.scene) : normalize(gltf.scene)),
-    [gltf.scene, cd],
+    () => (cd ? normalizeCd(gltf.scene, design.modelVariant === "v2") : normalize(gltf.scene)),
+    [gltf.scene, cd, design.modelVariant],
   );
   const aspect = labelAspect(design);
   const donut = labelDonut(design);
@@ -470,7 +473,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   const ps1 = (design.mediaType ?? "floppy") === "ps1";
   const shellNone = !!design.shellNone;
   const shutterNone = !!design.shutterNone;
-  const mcLogo = design.mcLogo !== false;
+  // default off: the print lives on the original black skin, so enabling it
+  // trades the transparent shell for the dark original casing
+  const mcLogo = design.mcLogo === true;
   const mcLabel = design.mcLabel !== false;
   const mcLabelColor = design.mcLabelColor;
 
