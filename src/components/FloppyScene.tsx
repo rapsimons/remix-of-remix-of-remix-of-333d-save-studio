@@ -181,7 +181,7 @@ function normalize(scene: THREE.Object3D) {
   return { object: outer, frontSurface, backSurface, faceW: size.x * scale, faceH: size.y * scale };
 }
 
-function normalizeCd(scene: THREE.Object3D) {
+function normalizeCd(scene: THREE.Object3D, flip = false) {
   // All uploaded CD meshes are authored in local XY. Export parent transforms
   // (FBX tilt, camera/light offsets and unit conversion) are not part of the disc.
   const object = new THREE.Group();
@@ -193,6 +193,9 @@ function normalizeCd(scene: THREE.Object3D) {
     mesh.userData["origMat"] = source.material;
     object.add(mesh);
   });
+  // some exports (CD v2) are authored print-side-down; that is fixed by
+  // mirroring the print UVs in createNativeDiscMaterial, not by rotating
+  void flip;
   const box = new THREE.Box3().setFromObject(object, true);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
@@ -208,6 +211,11 @@ function normalizeCd(scene: THREE.Object3D) {
       const nz = normal?.getZ(i) ?? 1;
       faces[i] = nz > 0.5 ? 0 : nz < -0.5 ? 1 : 2;
     }
+    // zero-thickness layers (V3 label / foil) have unreliable normals — the
+    // material name says which physical side they are
+    const matName = ((mesh.userData["origMat"] as THREE.Material | undefined)?.name ?? "").toLowerCase();
+    if (matName === "label") faces.fill(0);
+    else if (matName === "metalfoil" || matName === "discbottom") faces.fill(1);
     mesh.geometry.setAttribute("aFace", new THREE.BufferAttribute(faces, 1));
   });
   return { object, frontSurface: size.z * scale / 2, backSurface: -size.z * scale / 2, faceW: 2, faceH: 2 };
@@ -223,8 +231,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
 
   const { object, frontSurface, backSurface, faceW, faceH } = useMemo(
-    () => (cd ? normalizeCd(gltf.scene) : normalize(gltf.scene)),
-    [gltf.scene, cd],
+    () => (cd ? normalizeCd(gltf.scene, design.modelVariant === "v2") : normalize(gltf.scene)),
+    [gltf.scene, cd, design.modelVariant],
   );
   const aspect = labelAspect(design);
   const donut = labelDonut(design);
@@ -325,7 +333,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const orig = mesh.userData["origMat"] as THREE.MeshStandardMaterial | undefined;
       const n = orig?.name.toLowerCase() ?? "";
       if (n.includes("clearplastic")) return;
-      const m = createNativeDiscMaterial(faceW / 2, orig?.map ?? null);
+      const m = createNativeDiscMaterial(faceW / 2, orig?.map ?? null, design.modelVariant === "v2");
       m.toneMapped = false; // keep printed fronts at their true colours
       if (n === "label") {
         // V3 printed label shares the foil's top plane — draw it on top
@@ -344,7 +352,16 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       materials.set(mesh, m);
     });
     return materials;
-  }, [object, cd, faceW]);
+  }, [object, cd, faceW, design.modelVariant]);
+  // the uploaded background image, as a texture the disc shader can reflect
+  const bgTex = useMemo(() => {
+    if (!design.bgImage) return null;
+    const t = new THREE.TextureLoader().load(design.bgImage);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, [design.bgImage]);
+  useEffect(() => () => bgTex?.dispose(), [bgTex]);
+
   useEffect(() => {
     nativeMaterials.forEach((m) => {
       const art = m.uniforms["uArt"];
@@ -353,9 +370,17 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       if (art) art.value = frontTex;
       if (hasArt) hasArt.value = frontTex ? 1 : 0;
       if (tint) (tint.value as THREE.Color).set(cdBackTint ?? "#3a3a3a");
+      const env = m.uniforms["uEnv"];
+      const hasEnv = m.uniforms["uHasEnv"];
+      const envStr = m.uniforms["uEnvStr"];
+      const envBlur = m.uniforms["uEnvBlur"];
+      if (env) env.value = bgTex;
+      if (hasEnv) hasEnv.value = bgTex ? 1 : 0;
+      if (envStr) envStr.value = design.reflectStrength ?? 1;
+      if (envBlur) envBlur.value = design.reflectBlur ?? 0.3;
       setDiscLights(m, design.lights ?? []);
     });
-  }, [nativeMaterials, frontTex, cdBackTint, design.lights]);
+  }, [nativeMaterials, frontTex, cdBackTint, design.lights, bgTex, design.reflectStrength, design.reflectBlur]);
   useEffect(() => () => {
     nativeMaterials.forEach((m) => m.dispose());
     if (cd) object.traverse((n) => { if ((n as THREE.Mesh).isMesh) (n as THREE.Mesh).geometry.dispose(); });
@@ -448,7 +473,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   const ps1 = (design.mediaType ?? "floppy") === "ps1";
   const shellNone = !!design.shellNone;
   const shutterNone = !!design.shutterNone;
-  const mcLogo = design.mcLogo !== false;
+  // default off: the print lives on the original black skin, so enabling it
+  // trades the transparent shell for the dark original casing
+  const mcLogo = design.mcLogo === true;
   const mcLabel = design.mcLabel !== false;
   const mcLabelColor = design.mcLabelColor;
 
@@ -496,6 +523,10 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         // built-in paper label lives in the Paper sticker gallery instead
         mesh.visible = variant !== "v2";
         mesh.material = orig;
+      } else if (mat.startsWith("material.") && (mesh.geometry.getAttribute("position")?.count ?? 0) <= 8) {
+        // floppy-v2 ships a dark full-face quad floating in front of the disk
+        // (4 verts, material "Material.001") — a ghost layer, never show it
+        mesh.visible = false;
       } else if (mat === "sony" || mat.startsWith("material.")) {
         mesh.material = orig;
       } else if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
@@ -640,7 +671,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             />
           </mesh>
         )}
-        {frontHoloMat && (
+        {frontHoloMat && !cd && (
           <mesh
             position={[0, 0, frontSurface + surfaceGap * 3]}
             material={frontHoloMat}
@@ -681,7 +712,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             />
           </mesh>
         )}
-        {backHoloMat && (
+        {backHoloMat && !cd && (
           <mesh
             position={[0, 0, backSurface - surfaceGap * 3]}
             rotation={[0, Math.PI, 0]}
@@ -716,26 +747,38 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 }
 
 function BackgroundImage({ url }: { url?: string | undefined }) {
-  const { scene } = useThree();
+  const { scene, gl } = useThree();
   useEffect(() => {
     if (!url) {
       scene.background = null;
+      scene.environment = null;
       return;
     }
     let alive = true;
     let tex: THREE.Texture | null = null;
+    let envTex: THREE.Texture | null = null;
     new THREE.TextureLoader().load(url, (t) => {
       if (!alive) return t.dispose();
       t.colorSpace = THREE.SRGBColorSpace;
       tex = t;
       scene.background = t;
+      // let plastic / metal parts reflect the image too, not just the discs
+      const e = t.clone();
+      e.mapping = THREE.EquirectangularReflectionMapping;
+      const pmrem = new THREE.PMREMGenerator(gl);
+      envTex = pmrem.fromEquirectangular(e).texture;
+      e.dispose();
+      pmrem.dispose();
+      scene.environment = envTex;
     });
     return () => {
       alive = false;
       scene.background = null;
+      scene.environment = null;
       tex?.dispose();
+      envTex?.dispose();
     };
-  }, [url, scene]);
+  }, [url, scene, gl]);
   return null;
 }
 
@@ -774,7 +817,7 @@ export function FloppyScene(props: Props) {
       <Suspense fallback={null}>
         <ErrorGuard onError={() => setFailed(true)}>
           <Floppy key={modelUrlFor(props.design, isCd(props.design) ? cdModel.url : props.modelUrl || DEFAULT_MODEL_URL)} {...props} />
-          <Environment resolution={256} key={JSON.stringify(props.design.lights ?? [])}>
+          <Environment resolution={256} key={JSON.stringify(props.design.lights ?? []) + (props.design.bgImage ? "bg" : "")}>
             {/* one large soft key only — no strip panels that read as a room in the disc */}
             <Lightformer form="circle" intensity={isCd(props.design) ? 0.6 : 1.2} position={[0, 4, 3]} scale={[10, 10, 1]} />
             {/* huge, dim, off-screen gel panels — reflect as smooth colour falloff, never a hotspot */}
