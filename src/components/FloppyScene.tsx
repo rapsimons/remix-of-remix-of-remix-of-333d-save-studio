@@ -666,7 +666,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             />
           </mesh>
         )}
-        {frontHoloMat && (
+        {frontHoloMat && !cd && (
           <mesh
             position={[0, 0, frontSurface + surfaceGap * 3]}
             material={frontHoloMat}
@@ -707,7 +707,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             />
           </mesh>
         )}
-        {backHoloMat && (
+        {backHoloMat && !cd && (
           <mesh
             position={[0, 0, backSurface - surfaceGap * 3]}
             rotation={[0, Math.PI, 0]}
@@ -742,26 +742,38 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 }
 
 function BackgroundImage({ url }: { url?: string | undefined }) {
-  const { scene } = useThree();
+  const { scene, gl } = useThree();
   useEffect(() => {
     if (!url) {
       scene.background = null;
+      scene.environment = null;
       return;
     }
     let alive = true;
     let tex: THREE.Texture | null = null;
+    let envTex: THREE.Texture | null = null;
     new THREE.TextureLoader().load(url, (t) => {
       if (!alive) return t.dispose();
       t.colorSpace = THREE.SRGBColorSpace;
       tex = t;
       scene.background = t;
+      // let plastic / metal parts reflect the image too, not just the discs
+      const e = t.clone();
+      e.mapping = THREE.EquirectangularReflectionMapping;
+      const pmrem = new THREE.PMREMGenerator(gl);
+      envTex = pmrem.fromEquirectangular(e).texture;
+      e.dispose();
+      pmrem.dispose();
+      scene.environment = envTex;
     });
     return () => {
       alive = false;
       scene.background = null;
+      scene.environment = null;
       tex?.dispose();
+      envTex?.dispose();
     };
-  }, [url, scene]);
+  }, [url, scene, gl]);
   return null;
 }
 
