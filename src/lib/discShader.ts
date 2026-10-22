@@ -235,6 +235,10 @@ export function createDiscMaterial(R: number, artIn: number, printOut: number) {
     side: THREE.DoubleSide,
     uniforms: {
       uArt: { value: null },
+      uEnv: { value: null },
+      uHasEnv: { value: 0 },
+      uEnvStr: { value: 1 },
+      uEnvBlur: { value: 0.3 },
       uHasArt: { value: 0 },
       uR: { value: R },
       uArtIn: { value: artIn },

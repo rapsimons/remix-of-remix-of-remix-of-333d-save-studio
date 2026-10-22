@@ -208,6 +208,11 @@ function normalizeCd(scene: THREE.Object3D) {
       const nz = normal?.getZ(i) ?? 1;
       faces[i] = nz > 0.5 ? 0 : nz < -0.5 ? 1 : 2;
     }
+    // zero-thickness layers (V3 label / foil) have unreliable normals — the
+    // material name says which physical side they are
+    const matName = ((mesh.userData["origMat"] as THREE.Material | undefined)?.name ?? "").toLowerCase();
+    if (matName === "label") faces.fill(0);
+    else if (matName === "metalfoil" || matName === "discbottom") faces.fill(1);
     mesh.geometry.setAttribute("aFace", new THREE.BufferAttribute(faces, 1));
   });
   return { object, frontSurface: size.z * scale / 2, backSurface: -size.z * scale / 2, faceW: 2, faceH: 2 };
