@@ -333,7 +333,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const orig = mesh.userData["origMat"] as THREE.MeshStandardMaterial | undefined;
       const n = orig?.name.toLowerCase() ?? "";
       if (n.includes("clearplastic")) return;
-      const m = createNativeDiscMaterial(faceW / 2, orig?.map ?? null);
+      const m = createNativeDiscMaterial(faceW / 2, orig?.map ?? null, design.modelVariant === "v2");
       m.toneMapped = false; // keep printed fronts at their true colours
       if (n === "label") {
         // V3 printed label shares the foil's top plane — draw it on top
