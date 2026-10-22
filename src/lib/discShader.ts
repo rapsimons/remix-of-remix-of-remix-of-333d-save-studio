@@ -265,12 +265,14 @@ export function setDiscLights(m: THREE.ShaderMaterial, lights: SceneLight[]) {
 }
 
 /** The optical effect on a supplied GLB's vertices, retaining its original UV print. */
-export function createNativeDiscMaterial(radius: number, original: THREE.Texture | null) {
+export function createNativeDiscMaterial(radius: number, original: THREE.Texture | null, flipUv = false) {
   const material = createDiscMaterial(radius, 14.4, 59.1);
   material.uniforms["uNativeArt"] = { value: original };
   material.uniforms["uHasNativeArt"] = { value: original ? 1 : 0 };
   material.vertexShader = VERT.replace("attribute float aFace;", "attribute float aFace; varying vec2 vOriginalUv;")
-    .replace("vLocal = position;", "vLocal = position; vOriginalUv = uv;");
+    .replace("vLocal = position;", flipUv
+      ? "vLocal = position; vOriginalUv = vec2(1.0 - uv.x, uv.y);"
+      : "vLocal = position; vOriginalUv = uv;");
   material.fragmentShader = FRAG.replace("uniform sampler2D uArt;", "uniform sampler2D uArt; uniform sampler2D uNativeArt; uniform float uHasNativeArt; varying vec2 vOriginalUv;")
     .replace("vec4 art = texture2D(uArt, uv) * uHasArt;", "vec4 base = texture2D(uNativeArt, vOriginalUv) * uHasNativeArt; base.a = max(base.a, step(0.01, dot(base.rgb, vec3(1.0))) * uHasNativeArt); vec4 overlay = texture2D(uArt, uv) * uHasArt; vec4 art = vec4(mix(base.rgb, overlay.rgb, overlay.a), max(base.a, overlay.a));")
     .replace("art.rgb * lights(N)", "art.rgb * (0.82 + 0.18 * max(dot(N, KEY), 0.0))")

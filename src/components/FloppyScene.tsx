@@ -193,9 +193,9 @@ function normalizeCd(scene: THREE.Object3D, flip = false) {
     mesh.userData["origMat"] = source.material;
     object.add(mesh);
   });
-  // some exports (CD v2) are authored print-side-down: turn them around so
-  // the printed face looks at the camera like the others
-  if (flip) object.children.forEach((node) => (node as THREE.Mesh).geometry.rotateY(Math.PI));
+  // some exports (CD v2) are authored print-side-down; that is fixed by
+  // mirroring the print UVs in createNativeDiscMaterial, not by rotating
+  void flip;
   const box = new THREE.Box3().setFromObject(object, true);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
