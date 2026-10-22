@@ -812,7 +812,7 @@ export function FloppyScene(props: Props) {
       <Suspense fallback={null}>
         <ErrorGuard onError={() => setFailed(true)}>
           <Floppy key={modelUrlFor(props.design, isCd(props.design) ? cdModel.url : props.modelUrl || DEFAULT_MODEL_URL)} {...props} />
-          <Environment resolution={256} key={JSON.stringify(props.design.lights ?? [])}>
+          <Environment resolution={256} key={JSON.stringify(props.design.lights ?? []) + (props.design.bgImage ? "bg" : "")}>
             {/* one large soft key only — no strip panels that read as a room in the disc */}
             <Lightformer form="circle" intensity={isCd(props.design) ? 0.6 : 1.2} position={[0, 4, 3]} scale={[10, 10, 1]} />
             {/* huge, dim, off-screen gel panels — reflect as smooth colour falloff, never a hotspot */}
