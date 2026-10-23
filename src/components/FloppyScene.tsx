@@ -229,7 +229,7 @@ function normalizeCd(scene: THREE.Object3D, flip = false) {
   // some exports (CD v2) are authored print-side-down; that is fixed by
   // mirroring the print UVs in createNativeDiscMaterial, not by rotating
   // CD v2's print is authored on the -Z side: turn the disc so it faces front
-  if (flip) object.children.forEach((n) => (n as THREE.Mesh).geometry.rotateY(Math.PI));
+  if (flip) object.children.forEach((n) => (n as THREE.Mesh).geometry.rotateX(Math.PI));
   const box = new THREE.Box3().setFromObject(object, true);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
