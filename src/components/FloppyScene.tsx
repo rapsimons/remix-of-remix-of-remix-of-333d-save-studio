@@ -10,6 +10,39 @@ import { alignmentFor } from "@/lib/modelAlignment";
 import { createNativeDiscMaterial, setDiscLights } from "@/lib/discShader";
 
 import cdModel from "@/assets/cd.glb.asset.json";
+import ps1Color from "@/assets/mcard-ps1-C.jpg.asset.json";
+import ps1Normal from "@/assets/mcard-ps1-N.jpg.asset.json";
+
+/** Tileable fine-grain height texture turned into a normal map. */
+let grainTex: THREE.CanvasTexture | null = null;
+function plasticGrainNormal() {
+  if (grainTex || typeof document === "undefined") return grainTex;
+  const n = 256, c = document.createElement("canvas");
+  c.width = c.height = n;
+  const ctx = c.getContext("2d")!;
+  const h = new Float32Array(n * n);
+  for (let i = 0; i < h.length; i++) h[i] = Math.random();
+  // soften once so the stipple reads as moulded texture, not noise
+  const s = new Float32Array(n * n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    let a = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) a += h[((y + dy + n) % n) * n + ((x + dx + n) % n)]!;
+    s[y * n + x] = a / 9;
+  }
+  const img = ctx.createImageData(n, n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const dx = s[y * n + ((x + 1) % n)]! - s[y * n + ((x - 1 + n) % n)]!;
+    const dy = s[((y + 1) % n) * n + x]! - s[((y - 1 + n) % n) * n + x]!;
+    const v = new THREE.Vector3(-dx * 4, -dy * 4, 1).normalize();
+    const o = (y * n + x) * 4;
+    img.data[o] = (v.x * 0.5 + 0.5) * 255; img.data[o + 1] = (v.y * 0.5 + 0.5) * 255; img.data[o + 2] = (v.z * 0.5 + 0.5) * 255; img.data[o + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  grainTex = new THREE.CanvasTexture(c);
+  grainTex.wrapS = grainTex.wrapT = THREE.RepeatWrapping;
+  grainTex.repeat.set(6, 6);
+  return grainTex;
+}
 import {
   createHoloMaterial,
   holoOverlayIndex,
@@ -195,7 +228,8 @@ function normalizeCd(scene: THREE.Object3D, flip = false) {
   });
   // some exports (CD v2) are authored print-side-down; that is fixed by
   // mirroring the print UVs in createNativeDiscMaterial, not by rotating
-  void flip;
+  // CD v2's print is authored on the -Z side: turn the disc so it faces front
+  if (flip) object.children.forEach((n) => (n as THREE.Mesh).geometry.rotateX(Math.PI));
   const box = new THREE.Box3().setFromObject(object, true);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
@@ -299,6 +333,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
 
   const metal = design.metalness ?? 0;
+  const grain = design.plasticGrain ?? 0.3;
+  const shimmer = design.glassShimmer ?? 0.3;
   const material = useMemo(() => {
     // metal blocks light: the more metallic, the less see-through the shell
     const solid = Math.max(0, Math.min(1, (design.opacity - 0.1) / 0.9));
@@ -317,8 +353,16 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       opacity: cd ? 0.18 : Math.max(design.opacity, metal * 0.9),
       side: THREE.DoubleSide,
       depthWrite: design.opacity > 0.95,
+      normalMap: !cd && grain > 0 ? plasticGrainNormal() : null,
+      normalScale: new THREE.Vector2(grain * 1.5, grain * 1.5),
+      clearcoatNormalMap: !cd && grain > 0 ? plasticGrainNormal() : null,
+      clearcoatNormalScale: new THREE.Vector2(grain * 0.6, grain * 0.6),
+      iridescence: shimmer,
+      iridescenceIOR: 1.6,
+      iridescenceThicknessRange: [120, 700],
+      dispersion: shimmer * 6,
     });
-  }, [design.color, design.roughness, design.opacity, design.mediaType, metal, cd]);
+  }, [design.color, design.roughness, design.opacity, design.mediaType, metal, cd, grain, shimmer]);
 
   // CD reflective data layer
   const holoEnvRef = useRef<THREE.Texture | null>(null);
@@ -492,6 +536,15 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     return m;
   }, [ps1, object, material, mcLogo]);
 
+  // PS1 card (v1): original colour + normal maps from the uploaded file
+  const ps1Textured = useMemo(() => {
+    if (!ps1 || variant !== "v1" || typeof document === "undefined") return null;
+    const l = new THREE.TextureLoader();
+    const map = l.load(ps1Color.url); map.colorSpace = THREE.SRGBColorSpace; map.flipY = false;
+    const nrm = l.load(ps1Normal.url); nrm.flipY = false;
+    return new THREE.MeshStandardMaterial({ map, normalMap: nrm, roughness: 0.55, metalness: 0, side: THREE.DoubleSide });
+  }, [ps1, variant]);
+
   const labelMaterial = useMemo(
     () => new THREE.MeshStandardMaterial({ color: new THREE.Color(mcLabelColor ?? "#ffffff"), roughness: 0.8, side: THREE.DoubleSide }),
     [mcLabelColor],
@@ -508,7 +561,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       const name = mesh.name.toLowerCase();
       mesh.visible = true;
       if (ps1) {
-        if (mat.includes("material.001")) {
+        if (mat === "ps1_shell") {
+          mesh.material = mcLogo || shellNone ? ps1Textured ?? orig : material;
+        } else if (mat.includes("material.001")) {
           mesh.material = shellNone ? orig : psShellMaterial ?? material;
         } else if (mat.includes("material.002")) {
           mesh.visible = mcLabel;
@@ -516,7 +571,22 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         } else mesh.material = orig;
       } else if (cd) {
         // Each variant keeps every native vertex and its embedded front print.
-        mesh.material = mat.includes("clearplastic") ? clearPlasticMaterial : nativeMaterials.get(mesh) ?? orig;
+        // the printed fronts keep the file's own material/texture untouched;
+        // only V3's separate foil/bottom layers get the spectral back shader
+        if (mat.includes("clearplastic")) mesh.material = clearPlasticMaterial;
+        else if (mat === "metalfoil" || mat === "discbottom") mesh.material = nativeMaterials.get(mesh) ?? orig;
+        else {
+          mesh.material = orig;
+          if (mat === "label") {
+            // label sits on the foil plane: print only toward the front, pulled forward
+            const m = orig as THREE.MeshStandardMaterial;
+            m.side = THREE.FrontSide;
+            m.polygonOffset = true; m.polygonOffsetFactor = -4; m.polygonOffsetUnits = -4;
+            const nz = mesh.geometry.getAttribute("normal")?.getZ(0) ?? 1;
+            if (nz < 0) m.side = THREE.BackSide;
+            mesh.renderOrder = 2;
+          }
+        }
       } else if (mat.includes("metal") || mat === "ring" || name.includes("shutter")) {
         mesh.material = shutterNone ? orig : metalMaterial;
       } else if (mat.includes("sticker")) {
@@ -536,7 +606,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       }
     });
   }, [object, material, metalMaterial, opticalDiscMaterial, clearPlasticMaterial, nativeMaterials, cd, ps1, variant,
-    shellNone, shutterNone, psShellMaterial, labelMaterial, mcLabel, mcLabelColor]);
+    shellNone, shutterNone, psShellMaterial, labelMaterial, mcLabel, mcLabelColor, ps1Textured, mcLogo]);
 
   // pointer gestures (drag to spin, pinch / wheel to zoom)
   useEffect(() => {

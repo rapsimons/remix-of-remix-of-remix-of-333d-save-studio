@@ -587,12 +587,16 @@ export function Studio() {
                       onChange={(v) => store.patch((d) => void (d.metalness = v))} />
                     <Slider label="Frost" min={0} max={0.6} step={0.01} value={design.roughness}
                       onChange={(v) => store.patch((d) => void (d.roughness = v))} />
+                    <Slider label="Plastic grain" min={0} max={1} step={0.01} value={design.plasticGrain ?? 0.3}
+                      onChange={(v) => store.patch((d) => void (d.plasticGrain = v))} />
+                    <Slider label="Glass shimmer" min={0} max={1} step={0.01} value={design.glassShimmer ?? 0.3}
+                      onChange={(v) => store.patch((d) => void (d.glassShimmer = v))} />
                   </Drawer>
                   {design.mediaType === "ps1" && (
                     <Drawer title="Print & label" open={drawer === "mcprint"} onToggle={() => toggleDrawer("mcprint")}>
                       <div className="grid grid-cols-2 gap-1">
-                        <Btn label="PlayStation text" active={design.mcLogo !== false}
-                          onClick={() => store.patch((d) => void (d.mcLogo = d.mcLogo === false))} />
+                        <Btn label={design.modelVariant === "v2" ? "PlayStation text" : "Original print"} active={design.mcLogo === true}
+                          onClick={() => store.patch((d) => void (d.mcLogo = d.mcLogo !== true))} />
                         <Btn label="Paper label" active={design.mcLabel !== false}
                           onClick={() => store.patch((d) => void (d.mcLabel = d.mcLabel === false))} />
                       </div>
