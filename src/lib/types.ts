@@ -115,6 +115,10 @@ export type Design = {
   mcLogo?: boolean;
   mcLabel?: boolean;
   mcLabelColor?: string;
+  /** fine moulded-plastic surface texture (0-1) */
+  plasticGrain?: number;
+  /** rainbow glass shimmer at edges of clear plastic (0-1) */
+  glassShimmer?: number;
   updatedAt: number;
 };
 
