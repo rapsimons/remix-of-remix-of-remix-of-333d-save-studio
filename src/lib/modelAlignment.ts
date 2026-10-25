@@ -2,7 +2,7 @@ import { defaultAlignment, type Alignment, type Design } from "./types";
 
 export function alignmentKey(d: Pick<Design, "mediaType" | "modelVariant" | "modelUrl">) {
   const media = d.mediaType ?? "floppy";
-  return `${media}:${media === "ps1" || media === "minidisc" ? "v1" : d.modelVariant ?? "v1"}:${d.modelUrl ?? "builtin"}`;
+  return `${media}:${media === "ps1" ? "v1" : d.modelVariant ?? "v1"}:${d.modelUrl ?? "builtin"}`;
 }
 
 export function alignmentFor(d: Design): Alignment {

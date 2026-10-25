@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { CD_INNER, CD_OUTER, isRound, labelAspect } from "@/lib/media";
+import { CD_INNER, CD_OUTER, isMiniDiscCart, isRound, labelAspect } from "@/lib/media";
+import mdFront from "@/assets/minidisc-front.png.asset.json";
+import mdBack from "@/assets/minidisc-back.png.asset.json";
 import { CD_HOLE } from "@/lib/labelCanvas";
 import { useStudio } from "@/lib/store";
 import type { LabelObject } from "@/lib/types";
@@ -207,6 +209,8 @@ export function Editor2D() {
   }
 
   const cd = isRound(design);
+  const md = isMiniDiscCart(design);
+  const wire = md ? (side === "back" ? mdBack.url : mdFront.url) : side === "back" ? backWireframe.url : frontWireframe.url;
   const hole = CD_HOLE * 100;
   const cdMask = `radial-gradient(circle closest-side, transparent ${hole}%, rgba(0,0,0,0.4) ${hole + 0.3}%, rgba(0,0,0,0.4) ${CD_INNER * 100}%, #000 ${CD_INNER * 100 + 0.3}%, #000 ${CD_OUTER * 100}%, rgba(0,0,0,0.25) ${CD_OUTER * 100 + 0.3}%, rgba(0,0,0,0.25) 99.6%, transparent 100%)`;
 
@@ -235,8 +239,8 @@ export function Editor2D() {
             style={{
               backgroundColor: design.color,
               opacity: 0.9,
-              WebkitMaskImage: `url(${side === "back" ? backWireframe.url : frontWireframe.url})`,
-              maskImage: `url(${side === "back" ? backWireframe.url : frontWireframe.url})`,
+              WebkitMaskImage: `url(${wire})`,
+              maskImage: `url(${wire})`,
               WebkitMaskSize: "100% 100%",
               maskSize: "100% 100%",
               WebkitMaskRepeat: "no-repeat",
