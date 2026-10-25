@@ -1,7 +1,8 @@
 import CaseStageRaw from "./cd-case/CaseStage";
 import { Suspense, useMemo, type ComponentType } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Environment, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
+import { Environment, Lightformer, OrbitControls, useGLTF, useTexture } from "@react-three/drei";
+import discImg from "@/assets/minidisc-disc.png.asset.json";
 import * as THREE from "three";
 const CaseStage = CaseStageRaw as unknown as ComponentType<{ disc: typeof DISC; spin?: boolean; paused?: boolean }>;
 import { DISC } from "./cd-case/disc";
