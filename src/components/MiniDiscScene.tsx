@@ -65,8 +65,11 @@ function Cartridge({ design }: { design: Design }) {
       new THREE.MeshPhysicalMaterial({
         map: discTex,
         alphaTest: 0.5,
-        metalness: 0.9,
-        roughness: 0.12,
+        metalness: 0.35,
+        roughness: 0.2,
+        emissive: new THREE.Color("#ffffff"),
+        emissiveMap: discTex,
+        emissiveIntensity: 0.35,
         iridescence: 1,
         iridescenceIOR: 1.8,
         iridescenceThicknessRange: [200, 800],
