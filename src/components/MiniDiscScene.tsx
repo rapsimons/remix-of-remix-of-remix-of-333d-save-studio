@@ -53,8 +53,8 @@ function Cartridge({ design }: { design: Design }) {
 
   // 1 unit ≈ 30 mm so it frames like the other media
   return (
-    <group scale={30} rotation={[0, 0, 0]}>
-      <primitive object={shellObj} />
+    <group scale={26}>
+      <primitive object={shellObj} rotation={[0, Math.PI, 0]} />
       {front && (
         <mesh position={[0, 0, T / 2 + 0.00005]}>
           <planeGeometry args={[W, H]} />
