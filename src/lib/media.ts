@@ -13,7 +13,7 @@ export type ModelVariant = "v1" | "v2" | "v3";
 export const VARIANTS: Record<MediaType, ModelVariant[]> = {
   floppy: ["v1", "v2"],
   cd: ["v1", "v2", "v3"],
-  minidisc: [],
+  minidisc: ["v1", "v2"],
   ps1: ["v1", "v2"],
 };
 
@@ -35,14 +35,21 @@ export const CD_INNER = 0.24; // clear centre hub
 export const mediaOf = (d: Pick<Design, "mediaType">): MediaType => d.mediaType ?? "floppy";
 export const isCd = (d: Pick<Design, "mediaType">) => mediaOf(d) === "cd";
 export const isMiniDisc = (d: Pick<Design, "mediaType">) => mediaOf(d) === "minidisc";
-/** Round artwork (CD or the disc inside a MiniDisc). */
-export const isRound = (d: Pick<Design, "mediaType">) => isCd(d) || isMiniDisc(d);
+/** MiniDisc V1: the real cartridge model (rectangular artwork). V2 is the jewel case. */
+export const isMiniDiscCart = (d: Pick<Design, "mediaType" | "modelVariant">) =>
+  isMiniDisc(d) && (d.modelVariant ?? "v1") === "v1";
+/** MiniDisc cartridge outline, 71.8 x 68.2 mm (matches the front drawing). */
+export const MD_ASPECT = 1280 / 1209;
+/** Round artwork (CD or the disc inside the jewel case). */
+export const isRound = (d: Pick<Design, "mediaType" | "modelVariant">) =>
+  isCd(d) || (isMiniDisc(d) && !isMiniDiscCart(d));
 
-export function labelAspect(d: Pick<Design, "mediaType">) {
+export function labelAspect(d: Pick<Design, "mediaType" | "modelVariant">) {
+  if (isMiniDiscCart(d)) return MD_ASPECT;
   return isRound(d) ? 1 : LABEL_ASPECT;
 }
 
-export function labelDonut(d: Pick<Design, "mediaType">) {
+export function labelDonut(d: Pick<Design, "mediaType" | "modelVariant">) {
   return isRound(d) ? { outer: CD_OUTER, inner: CD_INNER } : undefined;
 }
 
