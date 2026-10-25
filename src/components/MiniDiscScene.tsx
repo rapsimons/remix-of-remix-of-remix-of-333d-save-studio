@@ -44,7 +44,7 @@ function Cartridge({ design }: { design: Design }) {
       ior: 1.5,
       iridescence: 0.3,
       transparent: true,
-      opacity: Math.max(0.08, o * 0.5),
+      opacity: Math.max(0.18, o * 0.6),
       depthWrite: false,
       side: THREE.DoubleSide,
     });
@@ -65,11 +65,11 @@ function Cartridge({ design }: { design: Design }) {
       new THREE.MeshPhysicalMaterial({
         map: discTex,
         alphaTest: 0.5,
-        metalness: 0.35,
+        metalness: 0.15,
         roughness: 0.2,
         emissive: new THREE.Color("#ffffff"),
         emissiveMap: discTex,
-        emissiveIntensity: 0.35,
+        emissiveIntensity: 0.75,
         iridescence: 1,
         iridescenceIOR: 1.8,
         iridescenceThicknessRange: [200, 800],
@@ -79,7 +79,7 @@ function Cartridge({ design }: { design: Design }) {
     [discTex],
   );
   const metal = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#c3c7cc", metalness: 1, roughness: 0.32 }),
+    () => new THREE.MeshStandardMaterial({ color: "#d9dce0", metalness: 0.75, roughness: 0.4 }),
     [],
   );
   // Shutter from the drawing: left edge to 39% width, centred vertically, 28% tall.
@@ -130,6 +130,8 @@ export function MiniDiscScene({ design, allowZoom, onDoubleTap }: Props) {
             <Environment resolution={128}>
               <Lightformer intensity={1.5} position={[0, 4, 3]} scale={[8, 8, 1]} />
               <Lightformer intensity={0.6} position={[-4, 0, 2]} rotation-y={Math.PI / 2} scale={[6, 6, 1]} />
+              <Lightformer intensity={1} color="#ffd0f0" position={[4, 1, 2]} rotation-y={-Math.PI / 2} scale={[6, 6, 1]} />
+              <Lightformer intensity={1} color="#c8f0ff" position={[0, -3, 4]} scale={[8, 3, 1]} />
             </Environment>
           </Suspense>
           <OrbitControls enablePan={false} enableZoom={!!allowZoom} autoRotate={design.autoRotate ?? false} />
