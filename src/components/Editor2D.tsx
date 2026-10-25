@@ -249,6 +249,7 @@ export function Editor2D() {
               maskPosition: "center",
             }}
           />
+          {md && <img src={wire} alt="" className="absolute inset-0 h-full w-full mix-blend-multiply" draggable={false} />}
         </div>)}
         {cd && (
           <div
