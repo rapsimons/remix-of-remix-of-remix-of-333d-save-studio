@@ -44,7 +44,7 @@ function Cartridge({ design }: { design: Design }) {
       ior: 1.5,
       iridescence: 0.3,
       transparent: true,
-      opacity: Math.max(0.18, o * 0.6),
+      opacity: Math.max(0.25, o * 0.7),
       depthWrite: false,
       side: THREE.DoubleSide,
     });
