@@ -1,8 +1,8 @@
 import CaseStageRaw from "./cd-case/CaseStage";
 import { Suspense, useMemo, type ComponentType } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Environment, Lightformer, OrbitControls, useGLTF, useTexture } from "@react-three/drei";
-import discImg from "@/assets/minidisc-disc.png.asset.json";
+import { Environment, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
+import { createDiscMaterial, discGeometry, setDiscLights } from "@/lib/discShader";
 import * as THREE from "three";
 const CaseStage = CaseStageRaw as unknown as ComponentType<{ disc: typeof DISC; spin?: boolean; paused?: boolean }>;
 import { DISC } from "./cd-case/disc";
@@ -26,26 +26,23 @@ const T = 0.00501;
 
 function Cartridge({ design }: { design: Design }) {
   const gltf = useGLTF(mdModel.url);
-  const discTex = useTexture(discImg.url);
-  discTex.colorSpace = THREE.SRGBColorSpace;
   const shell = { color: design.color, opacity: design.opacity ?? 0.55 };
   const front = useLabelTexture(design.front, 1024, "all", shell, MD_ASPECT);
   const back = useLabelTexture(design.back, 1024, "all", shell, MD_ASPECT);
 
-  // Clear plastic: low opacity, no depth write so the disc inside shows through.
+  // Clear plastic: opacity follows the Shell slider directly.
   const mat = useMemo(() => {
-    const o = Math.min(design.opacity ?? 0.3, 0.6);
+    const o = Math.max(0.06, Math.min(1, design.opacity ?? 0.3));
     return new THREE.MeshPhysicalMaterial({
       color: design.color,
-      roughness: 0.08,
+      roughness: 0.1,
       metalness: 0,
       clearcoat: 1,
       clearcoatRoughness: 0.05,
       ior: 1.5,
-      iridescence: 0.3,
-      transparent: true,
-      opacity: Math.max(0.25, o * 0.7),
-      depthWrite: false,
+      transparent: o < 0.98,
+      opacity: o,
+      depthWrite: o >= 0.98,
       side: THREE.DoubleSide,
     });
   }, [design.color, design.opacity]);
@@ -60,46 +57,46 @@ function Cartridge({ design }: { design: Design }) {
     return s;
   }, [gltf.scene, mat]);
 
-  const discMat = useMemo(
+  // Same optical disc + shader as the CD, sized to the 64 mm MiniDisc.
+  const R = 0.032;
+  const discGeo = useMemo(() => discGeometry(R, R * 0.17, 0.0012), []);
+  const discMat = useMemo(() => {
+    const m = createDiscMaterial(R, 14.4, 59.1);
+    setDiscLights(m, design.lights ?? []);
+    return m;
+  }, [design.lights]);
+  const metal = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
-        map: discTex,
-        alphaTest: 0.5,
-        metalness: 0,
-        roughness: 0.2,
-        emissive: new THREE.Color("#ffffff"),
-        emissiveMap: discTex,
-        emissiveIntensity: 0.9,
-        iridescence: 1,
-        iridescenceIOR: 1.8,
-        iridescenceThicknessRange: [200, 800],
-        clearcoat: 1,
+        color: design.shutterColor ?? "#d9dce0",
+        metalness: design.shutterMetalness ?? 0.85,
+        roughness: design.shutterRoughness ?? 0.35,
         side: THREE.DoubleSide,
       }),
-    [discTex],
+    [design.shutterColor, design.shutterMetalness, design.shutterRoughness],
   );
-  const metal = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#d9dce0", metalness: 0.75, roughness: 0.4 }),
-    [],
-  );
-  // Shutter from the drawing: left edge to 39% width, centred vertically, 28% tall.
+  // Shutter: one U-shaped sheet wrapping the left edge — front plate, edge strip, back plate.
   const sw = W * 0.39;
   const sh = H * 0.28;
   const sx = -W / 2 + sw / 2;
-  const R = 0.031;
+  const st = 0.0002;
+  const z = T / 2 + st / 2;
 
   return (
     <group scale={20}>
-      <mesh material={discMat} position={[0.0007, 0, 0]} renderOrder={1}>
-        <circleGeometry args={[R, 96]} />
-      </mesh>
-      <mesh material={metal} position={[sx, 0, T / 2 + 0.00003]} renderOrder={4}>
-        <boxGeometry args={[sw, sh, 0.0002]} />
-      </mesh>
-      <mesh material={metal} position={[-sx, 0, -T / 2 - 0.00003]} renderOrder={4}>
-        <boxGeometry args={[sw, sh, 0.0002]} />
-      </mesh>
-      <primitive object={shellObj} rotation={[0, Math.PI, 0]} />
+      <mesh geometry={discGeo} material={discMat} renderOrder={1} />
+      <group renderOrder={4}>
+        <mesh material={metal} position={[sx, 0, z]}>
+          <boxGeometry args={[sw, sh, st]} />
+        </mesh>
+        <mesh material={metal} position={[sx, 0, -z]}>
+          <boxGeometry args={[sw, sh, st]} />
+        </mesh>
+        <mesh material={metal} position={[-W / 2 - st / 2, 0, 0]}>
+          <boxGeometry args={[st, sh, T + st * 2]} />
+        </mesh>
+      </group>
+      <primitive object={shellObj} />
 
       {front && (
         <mesh position={[0, 0, T / 2 + 0.00005]}>
