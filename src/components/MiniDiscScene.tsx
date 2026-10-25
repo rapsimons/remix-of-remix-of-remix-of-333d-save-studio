@@ -30,22 +30,28 @@ function Cartridge({ design }: { design: Design }) {
   const front = useLabelTexture(design.front, 1024, "all", shell, MD_ASPECT);
   const back = useLabelTexture(design.back, 1024, "all", shell, MD_ASPECT);
 
-  // Clear plastic: opacity follows the Shell slider directly.
+  // Clear plastic: physical transmission so the disc shows through; the
+  // Transparency slider sets how solid the plastic is.
   const mat = useMemo(() => {
-    const o = Math.max(0.06, Math.min(1, design.opacity ?? 0.3));
+    const solid = Math.max(0, Math.min(1, ((design.opacity ?? 0.55) - 0.1) / 0.9));
+    const shimmer = design.glassShimmer ?? 0.3;
     return new THREE.MeshPhysicalMaterial({
-      color: design.color,
-      roughness: 0.1,
+      color: new THREE.Color(design.shellNone ? "#ffffff" : design.color).lerp(new THREE.Color("#ffffff"), 0.55 * (1 - solid)),
+      roughness: Math.max(0.03, design.roughness ?? 0.05),
       metalness: 0,
-      clearcoat: 1,
-      clearcoatRoughness: 0.05,
+      transmission: 1 - solid * 0.9,
+      thickness: 0.02,
       ior: 1.5,
-      transparent: o < 0.98,
-      opacity: o,
-      depthWrite: o >= 0.98,
-      side: THREE.DoubleSide,
+      clearcoat: 1,
+      clearcoatRoughness: 0.04,
+      iridescence: shimmer,
+      iridescenceIOR: 1.6,
+      iridescenceThicknessRange: [120, 700],
+      dispersion: shimmer * 6,
+      envMapIntensity: 1.2,
+      side: THREE.FrontSide,
     });
-  }, [design.color, design.opacity]);
+  }, [design.color, design.opacity, design.roughness, design.glassShimmer, design.shellNone]);
   const shellObj = useMemo(() => {
     const s = gltf.scene.clone(true);
     s.traverse((o) => {
@@ -85,6 +91,20 @@ function Cartridge({ design }: { design: Design }) {
   return (
     <group scale={20}>
       <mesh geometry={discGeo} material={discMat} renderOrder={1} />
+      {/* Centre metal clamping hub (both faces), like the floppy's hub. */}
+      {[1, -1].map((s) => (
+        <group key={s} position={[0, 0, s * 0.00075]} rotation={[s > 0 ? 0 : Math.PI, 0, 0]}>
+          <mesh material={metal}>
+            <ringGeometry args={[0.0021, 0.0098, 64]} />
+          </mesh>
+          <mesh material={metal} position={[0, 0, 0.00025]}>
+            <ringGeometry args={[0.0021, 0.0062, 64]} />
+          </mesh>
+          <mesh material={metal} position={[0, 0, 0.000125]}>
+            <cylinderGeometry args={[0.0062, 0.0062, 0.00025, 64, 1, true]} />
+          </mesh>
+        </group>
+      ))}
       <group renderOrder={4}>
         <mesh material={metal} position={[sx, 0, z]}>
           <boxGeometry args={[sw, sh, st]} />
