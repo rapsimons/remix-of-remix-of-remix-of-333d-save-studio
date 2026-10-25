@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { CD_INNER, CD_OUTER, isMiniDiscCart, isRound, labelAspect } from "@/lib/media";
-import mdFront from "@/assets/minidisc-front.png.asset.json";
-import mdBack from "@/assets/minidisc-back.png.asset.json";
+import mdFront from "@/assets/minidisc-front-v2.png.asset.json";
+import mdBack from "@/assets/minidisc-back-v2.png.asset.json";
 import { CD_HOLE } from "@/lib/labelCanvas";
 import { useStudio } from "@/lib/store";
 import type { LabelObject } from "@/lib/types";

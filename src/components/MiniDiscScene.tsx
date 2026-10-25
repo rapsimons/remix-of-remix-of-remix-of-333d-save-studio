@@ -1,7 +1,8 @@
 import CaseStageRaw from "./cd-case/CaseStage";
 import { Suspense, useMemo, type ComponentType } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Environment, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
+import { Environment, Lightformer, OrbitControls, useGLTF, useTexture } from "@react-three/drei";
+import discImg from "@/assets/minidisc-disc.png.asset.json";
 import * as THREE from "three";
 const CaseStage = CaseStageRaw as unknown as ComponentType<{ disc: typeof DISC; spin?: boolean; paused?: boolean }>;
 import { DISC } from "./cd-case/disc";
@@ -25,36 +26,81 @@ const T = 0.00501;
 
 function Cartridge({ design }: { design: Design }) {
   const gltf = useGLTF(mdModel.url);
+  const discTex = useTexture(discImg.url);
+  discTex.colorSpace = THREE.SRGBColorSpace;
   const shell = { color: design.color, opacity: design.opacity ?? 0.55 };
   const front = useLabelTexture(design.front, 1024, "all", shell, MD_ASPECT);
   const back = useLabelTexture(design.back, 1024, "all", shell, MD_ASPECT);
 
-  const mat = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: design.color,
-        roughness: 0.35,
-        metalness: 0,
-        clearcoat: 1,
-        clearcoatRoughness: 0.15,
-        transparent: (design.opacity ?? 1) < 1,
-        opacity: Math.max(0.15, design.opacity ?? 1),
-        side: THREE.DoubleSide,
-      }),
-    [design.color, design.opacity],
-  );
+  // Clear plastic: low opacity, no depth write so the disc inside shows through.
+  const mat = useMemo(() => {
+    const o = Math.min(design.opacity ?? 0.3, 0.6);
+    return new THREE.MeshPhysicalMaterial({
+      color: design.color,
+      roughness: 0.08,
+      metalness: 0,
+      clearcoat: 1,
+      clearcoatRoughness: 0.05,
+      ior: 1.5,
+      iridescence: 0.3,
+      transparent: true,
+      opacity: Math.max(0.25, o * 0.7),
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+  }, [design.color, design.opacity]);
   const shellObj = useMemo(() => {
     const s = gltf.scene.clone(true);
     s.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).material = mat;
+      if ((o as THREE.Mesh).isMesh) {
+        (o as THREE.Mesh).material = mat;
+        o.renderOrder = 3;
+      }
     });
     return s;
   }, [gltf.scene, mat]);
 
-  // 1 unit ≈ 30 mm so it frames like the other media
+  const discMat = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        map: discTex,
+        alphaTest: 0.5,
+        metalness: 0,
+        roughness: 0.2,
+        emissive: new THREE.Color("#ffffff"),
+        emissiveMap: discTex,
+        emissiveIntensity: 0.9,
+        iridescence: 1,
+        iridescenceIOR: 1.8,
+        iridescenceThicknessRange: [200, 800],
+        clearcoat: 1,
+        side: THREE.DoubleSide,
+      }),
+    [discTex],
+  );
+  const metal = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#d9dce0", metalness: 0.75, roughness: 0.4 }),
+    [],
+  );
+  // Shutter from the drawing: left edge to 39% width, centred vertically, 28% tall.
+  const sw = W * 0.39;
+  const sh = H * 0.28;
+  const sx = -W / 2 + sw / 2;
+  const R = 0.031;
+
   return (
     <group scale={20}>
+      <mesh material={discMat} position={[0.0007, 0, 0]} renderOrder={1}>
+        <circleGeometry args={[R, 96]} />
+      </mesh>
+      <mesh material={metal} position={[sx, 0, T / 2 + 0.00003]} renderOrder={4}>
+        <boxGeometry args={[sw, sh, 0.0002]} />
+      </mesh>
+      <mesh material={metal} position={[-sx, 0, -T / 2 - 0.00003]} renderOrder={4}>
+        <boxGeometry args={[sw, sh, 0.0002]} />
+      </mesh>
       <primitive object={shellObj} rotation={[0, Math.PI, 0]} />
+
       {front && (
         <mesh position={[0, 0, T / 2 + 0.00005]}>
           <planeGeometry args={[W, H]} />
@@ -84,6 +130,8 @@ export function MiniDiscScene({ design, allowZoom, onDoubleTap }: Props) {
             <Environment resolution={128}>
               <Lightformer intensity={1.5} position={[0, 4, 3]} scale={[8, 8, 1]} />
               <Lightformer intensity={0.6} position={[-4, 0, 2]} rotation-y={Math.PI / 2} scale={[6, 6, 1]} />
+              <Lightformer intensity={1} color="#ffd0f0" position={[4, 1, 2]} rotation-y={-Math.PI / 2} scale={[6, 6, 1]} />
+              <Lightformer intensity={1} color="#c8f0ff" position={[0, -3, 4]} scale={[8, 3, 1]} />
             </Environment>
           </Suspense>
           <OrbitControls enablePan={false} enableZoom={!!allowZoom} autoRotate={design.autoRotate ?? false} />
