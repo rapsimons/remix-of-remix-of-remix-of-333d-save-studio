@@ -25,36 +25,78 @@ const T = 0.00501;
 
 function Cartridge({ design }: { design: Design }) {
   const gltf = useGLTF(mdModel.url);
+  const discTex = useTexture(discImg.url);
+  discTex.colorSpace = THREE.SRGBColorSpace;
   const shell = { color: design.color, opacity: design.opacity ?? 0.55 };
   const front = useLabelTexture(design.front, 1024, "all", shell, MD_ASPECT);
   const back = useLabelTexture(design.back, 1024, "all", shell, MD_ASPECT);
 
-  const mat = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: design.color,
-        roughness: 0.35,
-        metalness: 0,
-        clearcoat: 1,
-        clearcoatRoughness: 0.15,
-        transparent: (design.opacity ?? 1) < 1,
-        opacity: Math.max(0.15, design.opacity ?? 1),
-        side: THREE.DoubleSide,
-      }),
-    [design.color, design.opacity],
-  );
+  // Clear plastic: low opacity, no depth write so the disc inside shows through.
+  const mat = useMemo(() => {
+    const o = Math.min(design.opacity ?? 0.3, 0.6);
+    return new THREE.MeshPhysicalMaterial({
+      color: design.color,
+      roughness: 0.08,
+      metalness: 0,
+      clearcoat: 1,
+      clearcoatRoughness: 0.05,
+      ior: 1.5,
+      iridescence: 0.3,
+      transparent: true,
+      opacity: Math.max(0.08, o * 0.5),
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+  }, [design.color, design.opacity]);
   const shellObj = useMemo(() => {
     const s = gltf.scene.clone(true);
     s.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).material = mat;
+      if ((o as THREE.Mesh).isMesh) {
+        (o as THREE.Mesh).material = mat;
+        o.renderOrder = 3;
+      }
     });
     return s;
   }, [gltf.scene, mat]);
 
-  // 1 unit ≈ 30 mm so it frames like the other media
+  const discMat = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        map: discTex,
+        alphaTest: 0.5,
+        metalness: 0.9,
+        roughness: 0.12,
+        iridescence: 1,
+        iridescenceIOR: 1.8,
+        iridescenceThicknessRange: [200, 800],
+        clearcoat: 1,
+        side: THREE.DoubleSide,
+      }),
+    [discTex],
+  );
+  const metal = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#c3c7cc", metalness: 1, roughness: 0.32 }),
+    [],
+  );
+  // Shutter from the drawing: left edge to 39% width, centred vertically, 28% tall.
+  const sw = W * 0.39;
+  const sh = H * 0.28;
+  const sx = -W / 2 + sw / 2;
+  const R = 0.031;
+
   return (
     <group scale={20}>
+      <mesh material={discMat} position={[0.0007, 0, 0]} renderOrder={1}>
+        <circleGeometry args={[R, 96]} />
+      </mesh>
+      <mesh material={metal} position={[sx, 0, T / 2 + 0.00003]} renderOrder={4}>
+        <boxGeometry args={[sw, sh, 0.0002]} />
+      </mesh>
+      <mesh material={metal} position={[-sx, 0, -T / 2 - 0.00003]} renderOrder={4}>
+        <boxGeometry args={[sw, sh, 0.0002]} />
+      </mesh>
       <primitive object={shellObj} rotation={[0, Math.PI, 0]} />
+
       {front && (
         <mesh position={[0, 0, T / 2 + 0.00005]}>
           <planeGeometry args={[W, H]} />
