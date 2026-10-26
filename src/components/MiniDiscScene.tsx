@@ -48,7 +48,7 @@ function Cartridge({ design }: { design: Design }) {
       iridescenceThicknessRange: [120, 700],
       envMapIntensity: 1,
       transparent: true,
-      opacity: Math.max(0.04, o * 0.6),
+      opacity: Math.max(0.15, o * 0.6),
       depthWrite: false,
       side: THREE.DoubleSide,
     });
