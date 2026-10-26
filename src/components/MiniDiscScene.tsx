@@ -9,7 +9,7 @@ import { DISC } from "./cd-case/disc";
 import type { Design } from "@/lib/types";
 import { isMiniDiscCart, MD_ASPECT } from "@/lib/media";
 import { useLabelTexture } from "@/lib/useLabelTextures";
-import mdModel from "@/assets/minidisc-v1.glb.asset.json";
+import mdParts from "@/assets/minidisc-parts.glb.asset.json";
 
 type Props = {
   design: Design;
@@ -25,52 +25,34 @@ const H = 0.0682;
 const T = 0.00501;
 
 function Cartridge({ design }: { design: Design }) {
-  const gltf = useGLTF(mdModel.url);
+  // The original CAD file split into its real parts: two case halves, the
+  // wrap-around metal slider, the write-protect tab and the metal centre hub.
+  const gltf = useGLTF(mdParts.url);
   const shell = { color: design.color, opacity: design.opacity ?? 0.55 };
   const front = useLabelTexture(design.front, 1024, "all", shell, MD_ASPECT);
   const back = useLabelTexture(design.back, 1024, "all", shell, MD_ASPECT);
 
-  // Clear plastic: physical transmission so the disc shows through; the
-  // Transparency slider sets how solid the plastic is.
-  const mat = useMemo(() => {
-    const solid = Math.max(0, Math.min(1, ((design.opacity ?? 0.55) - 0.1) / 0.9));
+  // Clear plastic: plain alpha blending (no transmission pass — that pass
+  // re-renders the disc and produced the "ghost" inside the case).
+  const plastic = useMemo(() => {
+    const o = design.opacity ?? 0.55;
     const shimmer = design.glassShimmer ?? 0.3;
     return new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(design.shellNone ? "#ffffff" : design.color).lerp(new THREE.Color("#ffffff"), 0.55 * (1 - solid)),
+      color: design.shellNone ? "#ffffff" : design.color,
       roughness: Math.max(0.03, design.roughness ?? 0.05),
       metalness: 0,
-      transmission: 1 - solid * 0.9,
-      thickness: 0.02,
-      ior: 1.5,
       clearcoat: 1,
       clearcoatRoughness: 0.04,
       iridescence: shimmer,
       iridescenceIOR: 1.6,
       iridescenceThicknessRange: [120, 700],
-      dispersion: shimmer * 6,
-      envMapIntensity: 1.2,
-      side: THREE.FrontSide,
+      envMapIntensity: 1,
+      transparent: true,
+      opacity: Math.max(0.04, o * 0.6),
+      depthWrite: false,
+      side: THREE.DoubleSide,
     });
   }, [design.color, design.opacity, design.roughness, design.glassShimmer, design.shellNone]);
-  const shellObj = useMemo(() => {
-    const s = gltf.scene.clone(true);
-    s.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) {
-        (o as THREE.Mesh).material = mat;
-        o.renderOrder = 3;
-      }
-    });
-    return s;
-  }, [gltf.scene, mat]);
-
-  // Same optical disc + shader as the CD, sized to the 64 mm MiniDisc.
-  const R = 0.032;
-  const discGeo = useMemo(() => discGeometry(R, R * 0.17, 0.0012), []);
-  const discMat = useMemo(() => {
-    const m = createDiscMaterial(R, 14.4, 59.1);
-    setDiscLights(m, design.lights ?? []);
-    return m;
-  }, [design.lights]);
   const metal = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
@@ -81,42 +63,31 @@ function Cartridge({ design }: { design: Design }) {
       }),
     [design.shutterColor, design.shutterMetalness, design.shutterRoughness],
   );
-  // Shutter: one U-shaped sheet wrapping the left edge — front plate, edge strip, back plate.
-  const sw = W * 0.39;
-  const sh = H * 0.28;
-  const sx = -W / 2 + sw / 2;
-  const st = 0.0002;
-  const z = T / 2 + st / 2;
+  const parts = useMemo(() => {
+    const s = gltf.scene.clone(true);
+    s.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      const isMetal = /shutter|hub/.test(m.name) || /shutter|hub/.test(m.parent?.name ?? "");
+      m.material = isMetal ? metal : plastic;
+      m.renderOrder = isMetal ? 2 : 5;
+    });
+    return s;
+  }, [gltf.scene, plastic, metal]);
+
+  // Same optical disc + shader as the CD, at the disc's true spot in the model.
+  const R = 0.032;
+  const discGeo = useMemo(() => discGeometry(R, 0.0076, 0.0012), []);
+  const discMat = useMemo(() => {
+    const m = createDiscMaterial(R, 15.2, 59.1);
+    setDiscLights(m, design.lights ?? []);
+    return m;
+  }, [design.lights]);
 
   return (
     <group scale={20}>
-      <mesh geometry={discGeo} material={discMat} renderOrder={1} />
-      {/* Centre metal clamping hub (both faces), like the floppy's hub. */}
-      {[1, -1].map((s) => (
-        <group key={s} position={[0, 0, s * 0.00075]} rotation={[s > 0 ? 0 : Math.PI, 0, 0]}>
-          <mesh material={metal}>
-            <ringGeometry args={[0.0021, 0.0098, 64]} />
-          </mesh>
-          <mesh material={metal} position={[0, 0, 0.00025]}>
-            <ringGeometry args={[0.0021, 0.0062, 64]} />
-          </mesh>
-          <mesh material={metal} position={[0, 0, 0.000125]}>
-            <cylinderGeometry args={[0.0062, 0.0062, 0.00025, 64, 1, true]} />
-          </mesh>
-        </group>
-      ))}
-      <group renderOrder={4}>
-        <mesh material={metal} position={[sx, 0, z]}>
-          <boxGeometry args={[sw, sh, st]} />
-        </mesh>
-        <mesh material={metal} position={[sx, 0, -z]}>
-          <boxGeometry args={[sw, sh, st]} />
-        </mesh>
-        <mesh material={metal} position={[-W / 2 - st / 2, 0, 0]}>
-          <boxGeometry args={[st, sh, T + st * 2]} />
-        </mesh>
-      </group>
-      <primitive object={shellObj} />
+      <mesh geometry={discGeo} material={discMat} position={[-0.00195, 0, 0.0007]} renderOrder={1} />
+      <primitive object={parts} />
 
       {front && (
         <mesh position={[0, 0, T / 2 + 0.00005]}>
