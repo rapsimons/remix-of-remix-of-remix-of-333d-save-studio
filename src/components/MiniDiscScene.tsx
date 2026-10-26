@@ -105,13 +105,13 @@ function Cartridge({ design }: { design: Design }) {
       {front && (
         <mesh position={[0, 0, T / 2 + 0.00005]}>
           <planeGeometry args={[W, H]} />
-          <meshStandardMaterial map={front} transparent roughness={0.4} polygonOffset polygonOffsetFactor={-2} />
+          <meshStandardMaterial map={front} transparent alphaTest={0.01} depthWrite={false} roughness={0.4} polygonOffset polygonOffsetFactor={-2} />
         </mesh>
       )}
       {back && (
         <mesh position={[0, 0, -T / 2 - 0.00005]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[W, H]} />
-          <meshStandardMaterial map={back} transparent roughness={0.4} polygonOffset polygonOffsetFactor={-2} />
+          <meshStandardMaterial map={back} transparent alphaTest={0.01} depthWrite={false} roughness={0.4} polygonOffset polygonOffsetFactor={-2} />
         </mesh>
       )}
     </group>
