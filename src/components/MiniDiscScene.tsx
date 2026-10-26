@@ -82,7 +82,7 @@ function Cartridge({ design }: { design: Design }) {
       if (!m.isMesh) return;
       const isMetal = /shutter|hub/.test(m.name) || /shutter|hub/.test(m.parent?.name ?? "");
       // the converted file ships without normals, which made the case unlit/invisible
-      if (!m.geometry.attributes.normal) m.geometry.computeVertexNormals();
+      if (!m.geometry.attributes["normal"]) m.geometry.computeVertexNormals();
       m.material = isMetal ? metal : plastic;
       if (!isMetal) {
         // moulded edges/ribs so clear plastic reads against any background
