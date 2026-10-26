@@ -38,21 +38,33 @@ function Cartridge({ design }: { design: Design }) {
     const o = design.opacity ?? 0.55;
     const shimmer = design.glassShimmer ?? 0.3;
     return new THREE.MeshPhysicalMaterial({
-      color: design.shellNone ? "#ffffff" : design.color,
-      roughness: Math.max(0.03, design.roughness ?? 0.05),
+      color: design.shellNone ? "#e8eef4" : design.color,
+      roughness: Math.max(0.05, design.roughness ?? 0.05),
       metalness: 0,
       clearcoat: 1,
       clearcoatRoughness: 0.04,
       iridescence: shimmer,
       iridescenceIOR: 1.6,
       iridescenceThicknessRange: [120, 700],
-      envMapIntensity: 1,
+      envMapIntensity: 1.6,
+      specularIntensity: 1,
       transparent: true,
-      opacity: Math.max(0.15, o * 0.6),
+      // keep the case readable even when fully clear
+      opacity: Math.min(1, 0.22 + o * 0.78),
       depthWrite: false,
-      side: THREE.DoubleSide,
+      side: THREE.FrontSide,
     });
   }, [design.color, design.opacity, design.roughness, design.glassShimmer, design.shellNone]);
+  const edgeMat = useMemo(
+    () =>
+      new THREE.LineBasicMaterial({
+        color: new THREE.Color(design.shellNone ? "#8a96a3" : design.color).multiplyScalar(0.7),
+        transparent: true,
+        opacity: 0.35 + (design.opacity ?? 0.55) * 0.4,
+        depthWrite: false,
+      }),
+    [design.color, design.opacity, design.shellNone],
+  );
   const metal = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
@@ -69,20 +81,37 @@ function Cartridge({ design }: { design: Design }) {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
       const isMetal = /shutter|hub/.test(m.name) || /shutter|hub/.test(m.parent?.name ?? "");
+      // the converted file ships without normals, which made the case unlit/invisible
+      if (!m.geometry.attributes.normal) m.geometry.computeVertexNormals();
       m.material = isMetal ? metal : plastic;
+      if (!isMetal) {
+        // moulded edges/ribs so clear plastic reads against any background
+        const lines = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 25), edgeMat);
+        lines.renderOrder = 6;
+        m.add(lines);
+      }
       m.renderOrder = isMetal ? 2 : 5;
     });
     return s;
-  }, [gltf.scene, plastic, metal]);
+  }, [gltf.scene, plastic, metal, edgeMat]);
 
   // Same optical disc + shader as the CD, at the disc's true spot in the model.
   const R = 0.032;
   const discGeo = useMemo(() => discGeometry(R, 0.0076, 0.0012), []);
   const discMat = useMemo(() => {
     const m = createDiscMaterial(R, 15.2, 59.1);
-    setDiscLights(m, design.lights ?? []);
+    m.uniforms["uDataIn"] = { value: 21.5 };
+    m.fragmentShader = m.fragmentShader
+      .replace("uniform float uR;", "uniform float uR; uniform float uDataIn;")
+      .replace("smoothstep(21.5, 23.0, r)", "smoothstep(uDataIn, uDataIn + 1.5, r)");
     return m;
-  }, [design.lights]);
+  }, []);
+  useMemo(() => {
+    setDiscLights(discMat, design.lights ?? []);
+    (discMat.uniforms["uTint"]!.value as THREE.Color).set(design.discColor ?? "#ffffff");
+    // slider 0..1 → clear plastic ring from just past the hub to ~45% of the disc
+    discMat.uniforms["uDataIn"]!.value = 18 + (design.discHubRing ?? 0.3) * 20;
+  }, [discMat, design.lights, design.discColor, design.discHubRing]);
 
   return (
     <group scale={20}>
@@ -92,13 +121,13 @@ function Cartridge({ design }: { design: Design }) {
       {front && (
         <mesh position={[0, 0, T / 2 + 0.00005]}>
           <planeGeometry args={[W, H]} />
-          <meshStandardMaterial map={front} transparent roughness={0.4} polygonOffset polygonOffsetFactor={-2} />
+          <meshStandardMaterial map={front} transparent alphaTest={0.01} depthWrite={false} roughness={0.4} polygonOffset polygonOffsetFactor={-2} />
         </mesh>
       )}
       {back && (
         <mesh position={[0, 0, -T / 2 - 0.00005]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[W, H]} />
-          <meshStandardMaterial map={back} transparent roughness={0.4} polygonOffset polygonOffsetFactor={-2} />
+          <meshStandardMaterial map={back} transparent alphaTest={0.01} depthWrite={false} roughness={0.4} polygonOffset polygonOffsetFactor={-2} />
         </mesh>
       )}
     </group>

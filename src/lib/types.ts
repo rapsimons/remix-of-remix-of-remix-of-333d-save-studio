@@ -119,6 +119,10 @@ export type Design = {
   plasticGrain?: number;
   /** rainbow glass shimmer at edges of clear plastic (0-1) */
   glassShimmer?: number;
+  /** MiniDisc: disc reflective tint */
+  discColor?: string;
+  /** MiniDisc: size of clear plastic ring around the centre hub (0-1) */
+  discHubRing?: number;
   updatedAt: number;
 };
 
