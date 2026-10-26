@@ -592,6 +592,14 @@ export function Studio() {
                     <Slider label="Glass shimmer" min={0} max={1} step={0.01} value={design.glassShimmer ?? 0.3}
                       onChange={(v) => store.patch((d) => void (d.glassShimmer = v))} />
                   </Drawer>
+                  {design.mediaType === "minidisc" && design.modelVariant !== "v2" && (
+                    <Drawer title="Disc" open={drawer === "mddisc"} onToggle={() => toggleDrawer("mddisc")}>
+                      <ColorRow label="Disc color" value={design.discColor ?? "#ffffff"}
+                        onChange={(v) => store.patch((d) => void (d.discColor = v))} />
+                      <Slider label="Plastic around hub" min={0} max={1} step={0.01} value={design.discHubRing ?? 0.3}
+                        onChange={(v) => store.patch((d) => void (d.discHubRing = v))} />
+                    </Drawer>
+                  )}
                   {design.mediaType === "ps1" && (
                     <Drawer title="Print & label" open={drawer === "mcprint"} onToggle={() => toggleDrawer("mcprint")}>
                       <div className="grid grid-cols-2 gap-1">

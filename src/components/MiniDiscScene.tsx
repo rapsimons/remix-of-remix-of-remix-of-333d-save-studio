@@ -38,19 +38,21 @@ function Cartridge({ design }: { design: Design }) {
     const o = design.opacity ?? 0.55;
     const shimmer = design.glassShimmer ?? 0.3;
     return new THREE.MeshPhysicalMaterial({
-      color: design.shellNone ? "#ffffff" : design.color,
-      roughness: Math.max(0.03, design.roughness ?? 0.05),
+      color: design.shellNone ? "#e8eef4" : design.color,
+      roughness: Math.max(0.05, design.roughness ?? 0.05),
       metalness: 0,
       clearcoat: 1,
       clearcoatRoughness: 0.04,
       iridescence: shimmer,
       iridescenceIOR: 1.6,
       iridescenceThicknessRange: [120, 700],
-      envMapIntensity: 1,
+      envMapIntensity: 1.6,
+      specularIntensity: 1,
       transparent: true,
-      opacity: Math.max(0.15, o * 0.6),
+      // keep the case readable even when fully clear
+      opacity: Math.min(1, 0.3 + o * 0.7),
       depthWrite: false,
-      side: THREE.DoubleSide,
+      side: THREE.FrontSide,
     });
   }, [design.color, design.opacity, design.roughness, design.glassShimmer, design.shellNone]);
   const metal = useMemo(
@@ -80,9 +82,18 @@ function Cartridge({ design }: { design: Design }) {
   const discGeo = useMemo(() => discGeometry(R, 0.0076, 0.0012), []);
   const discMat = useMemo(() => {
     const m = createDiscMaterial(R, 15.2, 59.1);
-    setDiscLights(m, design.lights ?? []);
+    m.uniforms["uDataIn"] = { value: 21.5 };
+    m.fragmentShader = m.fragmentShader
+      .replace("uniform float uR;", "uniform float uR; uniform float uDataIn;")
+      .replace("smoothstep(21.5, 23.0, r)", "smoothstep(uDataIn, uDataIn + 1.5, r)");
     return m;
-  }, [design.lights]);
+  }, []);
+  useMemo(() => {
+    setDiscLights(discMat, design.lights ?? []);
+    (discMat.uniforms["uTint"]!.value as THREE.Color).set(design.discColor ?? "#ffffff");
+    // slider 0..1 → clear plastic ring from just past the hub to ~45% of the disc
+    discMat.uniforms["uDataIn"]!.value = 18 + (design.discHubRing ?? 0.3) * 20;
+  }, [discMat, design.lights, design.discColor, design.discHubRing]);
 
   return (
     <group scale={20}>
