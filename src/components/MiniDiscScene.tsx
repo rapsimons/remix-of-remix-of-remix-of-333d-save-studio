@@ -50,11 +50,21 @@ function Cartridge({ design }: { design: Design }) {
       specularIntensity: 1,
       transparent: true,
       // keep the case readable even when fully clear
-      opacity: Math.min(1, 0.3 + o * 0.7),
+      opacity: Math.min(1, 0.22 + o * 0.78),
       depthWrite: false,
       side: THREE.FrontSide,
     });
   }, [design.color, design.opacity, design.roughness, design.glassShimmer, design.shellNone]);
+  const edgeMat = useMemo(
+    () =>
+      new THREE.LineBasicMaterial({
+        color: new THREE.Color(design.shellNone ? "#8a96a3" : design.color).multiplyScalar(0.7),
+        transparent: true,
+        opacity: 0.35 + (design.opacity ?? 0.55) * 0.4,
+        depthWrite: false,
+      }),
+    [design.color, design.opacity, design.shellNone],
+  );
   const metal = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
@@ -73,11 +83,17 @@ function Cartridge({ design }: { design: Design }) {
       const isMetal = /shutter|hub/.test(m.name) || /shutter|hub/.test(m.parent?.name ?? "");
       // the converted file ships without normals, which made the case unlit/invisible
       if (!m.geometry.attributes.normal) m.geometry.computeVertexNormals();
-      m.material = isMetal ? metal : new THREE.MeshBasicMaterial({ color: "red", side: THREE.DoubleSide }); console.log("MDPART", m.name, m.visible);
+      m.material = isMetal ? metal : plastic;
+      if (!isMetal) {
+        // moulded edges/ribs so clear plastic reads against any background
+        const lines = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 25), edgeMat);
+        lines.renderOrder = 6;
+        m.add(lines);
+      }
       m.renderOrder = isMetal ? 2 : 5;
     });
     return s;
-  }, [gltf.scene, plastic, metal]);
+  }, [gltf.scene, plastic, metal, edgeMat]);
 
   // Same optical disc + shader as the CD, at the disc's true spot in the model.
   const R = 0.032;
