@@ -71,6 +71,8 @@ function Cartridge({ design }: { design: Design }) {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
       const isMetal = /shutter|hub/.test(m.name) || /shutter|hub/.test(m.parent?.name ?? "");
+      // the converted file ships without normals, which made the case unlit/invisible
+      if (!m.geometry.attributes.normal) m.geometry.computeVertexNormals();
       m.material = isMetal ? metal : plastic;
       m.renderOrder = isMetal ? 2 : 5;
     });
