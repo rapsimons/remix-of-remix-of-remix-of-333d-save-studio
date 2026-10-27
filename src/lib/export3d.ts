@@ -27,8 +27,8 @@ function exportableClone(scene: THREE.Scene) {
         return c;
       }
       const u = (mat as THREE.ShaderMaterial).uniforms ?? {};
-      const tex = (u.uMap?.value ?? u.map?.value ?? u.uArt?.value) as THREE.Texture | undefined;
-      const tint = u.uTint?.value as THREE.Color | undefined;
+      const tex = (u["uMap"]?.value ?? u["map"]?.value ?? u["uArt"]?.value) as THREE.Texture | undefined;
+      const tint = u["uTint"]?.value as THREE.Color | undefined;
       return new THREE.MeshPhysicalMaterial({
         name: mat.name || "disc",
         color: tint ?? new THREE.Color("#d8dde4"),
