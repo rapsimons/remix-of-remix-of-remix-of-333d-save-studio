@@ -11,6 +11,7 @@ import { useStudio } from "@/lib/store";
 import { useTheme } from "@/lib/useTheme";
 import { encodeDesign } from "@/lib/share";
 import { renderLabel } from "@/lib/labelCanvas";
+import { downloadBlob, export3dZip, hasExportScene } from "@/lib/export3d";
 import { alignmentFor } from "@/lib/modelAlignment";
 import { defaultAlignment } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -68,6 +69,21 @@ export function Studio() {
     a.download = `${design.name}-${side}.png`;
     a.href = canvas.toDataURL("image/png");
     a.click();
+  }
+
+  async function export3d() {
+    if (!hasExportScene()) {
+      setToast("Open 3D view first");
+      return;
+    }
+    setToast("Exporting…");
+    try {
+      const blob = await export3dZip(design);
+      downloadBlob(blob, `${design.name || "model"}-3d.zip`);
+      setToast("3D model exported");
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "Export failed");
+    }
   }
 
   return (
@@ -718,11 +734,12 @@ export function Studio() {
         )}
       </main>
 
-      <footer className="grid grid-cols-4 gap-1 border-t border-hairline p-2">
+      <footer className="grid grid-cols-5 gap-1 border-t border-hairline p-2">
         <Btn icon="save" label="Save" onClick={() => void store.saveDesign().then(() => setToast("Saved"))} />
         <Btn icon="designs" label="Files" onClick={() => setPanel("designs")} />
         <Btn icon="share" label="Share" onClick={() => void share()} />
         <Btn icon="download" label="PNG" onClick={() => void download()} />
+        <Btn icon="download" label="3D" onClick={() => void export3d()} />
       </footer>
 
       {toast && (

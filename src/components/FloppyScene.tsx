@@ -863,8 +863,9 @@ export function FloppyScene(props: Props) {
       camera={{ position: [0, 0, 4.2], fov: 42 }}
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
-      onCreated={({ gl }) => {
+      onCreated={({ gl, scene }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
+        registerExportScene(scene);
       }}
     >
       <ambientLight intensity={0.25} />
