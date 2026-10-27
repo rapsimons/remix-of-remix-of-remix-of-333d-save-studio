@@ -589,8 +589,14 @@ export function Studio() {
                       onChange={(v) => store.patch((d) => void (d.roughness = v))} />
                     <Slider label="Plastic grain" min={0} max={1} step={0.01} value={design.plasticGrain ?? 0.3}
                       onChange={(v) => store.patch((d) => void (d.plasticGrain = v))} />
-                    <Slider label="Glass shimmer" min={0} max={1} step={0.01} value={design.glassShimmer ?? 0.3}
-                      onChange={(v) => store.patch((d) => void (d.glassShimmer = v))} />
+                    <Slider label="Glass refraction" min={0} max={1} step={0.01} value={design.glassRefraction ?? 0.5}
+                      onChange={(v) => store.patch((d) => void (d.glassRefraction = v))} />
+                    <Slider label="Rainbow dispersion" min={0} max={1} step={0.01} value={design.glassDispersion ?? 0.4}
+                      onChange={(v) => store.patch((d) => void (d.glassDispersion = v))} />
+                    <Slider label="Liquid waves" min={0} max={1} step={0.01} value={design.glassWaves ?? 0.3}
+                      onChange={(v) => store.patch((d) => void (d.glassWaves = v))} />
+                    <Slider label="Edge glint" min={0} max={1} step={0.01} value={design.glassGlint ?? 0.5}
+                      onChange={(v) => store.patch((d) => void (d.glassGlint = v))} />
                   </Drawer>
                   {design.mediaType === "minidisc" && design.modelVariant !== "v2" && (
                     <Drawer title="Disc" open={drawer === "mddisc"} onToggle={() => toggleDrawer("mddisc")}>

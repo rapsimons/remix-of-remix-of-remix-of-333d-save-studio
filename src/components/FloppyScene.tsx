@@ -7,6 +7,7 @@ import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
 import { cdBackColor, isCd, labelAspect, labelDonut, modelUrlFor, CD_OUTER, CD_INNER } from "@/lib/media";
 import { alignmentFor } from "@/lib/modelAlignment";
+import { applyLiquidGlass, LiquidGlassPass } from "./LiquidGlass";
 import { createNativeDiscMaterial, setDiscLights } from "@/lib/discShader";
 
 import cdModel from "@/assets/cd.glb.asset.json";
@@ -334,12 +335,11 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
 
   const metal = design.metalness ?? 0;
   const grain = design.plasticGrain ?? 0.3;
-  const shimmer = design.glassShimmer ?? 0.3;
   const material = useMemo(() => {
     // metal blocks light: the more metallic, the less see-through the shell
     const solid = Math.max(0, Math.min(1, (design.opacity - 0.1) / 0.9));
     const transmission = cd ? 0 : Math.max(0, (1 - metal) * (1 - solid * 0.85));
-    return new THREE.MeshPhysicalMaterial({
+    const mat = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(cd ? "#ffffff" : design.color),
       roughness: cd ? 0.03 : design.roughness,
       metalness: cd ? 0 : metal,
@@ -357,12 +357,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       normalScale: new THREE.Vector2(grain * 1.5, grain * 1.5),
       clearcoatNormalMap: !cd && grain > 0 ? plasticGrainNormal() : null,
       clearcoatNormalScale: new THREE.Vector2(grain * 0.6, grain * 0.6),
-      iridescence: shimmer,
-      iridescenceIOR: 1.6,
-      iridescenceThicknessRange: [120, 700],
-      dispersion: shimmer * 6,
     });
-  }, [design.color, design.roughness, design.opacity, design.mediaType, metal, cd, grain, shimmer]);
+    return cd || metal > 0.6 ? mat : applyLiquidGlass(mat);
+  }, [design.color, design.roughness, design.opacity, design.mediaType, metal, cd, grain]);
 
   // CD reflective data layer
   const holoEnvRef = useRef<THREE.Texture | null>(null);
@@ -816,7 +813,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   );
 }
 
-function BackgroundImage({ url }: { url?: string | undefined }) {
+export function BackgroundImage({ url }: { url?: string | undefined }) {
   const { scene, gl } = useThree();
   useEffect(() => {
     if (!url) {
@@ -884,6 +881,7 @@ export function FloppyScene(props: Props) {
         />
       ))}
       <BackgroundImage url={props.design.bgImage} />
+      <LiquidGlassPass design={props.design} />
       <Suspense fallback={null}>
         <ErrorGuard onError={() => setFailed(true)}>
           <Floppy key={modelUrlFor(props.design, isCd(props.design) ? cdModel.url : props.modelUrl || DEFAULT_MODEL_URL)} {...props} />

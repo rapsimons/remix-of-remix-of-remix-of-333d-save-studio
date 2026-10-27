@@ -5,6 +5,8 @@ import { Environment, Lightformer, OrbitControls, useGLTF } from "@react-three/d
 import { createDiscMaterial, discGeometry, setDiscLights } from "@/lib/discShader";
 import * as THREE from "three";
 const CaseStage = CaseStageRaw as unknown as ComponentType<{ disc: typeof DISC; spin?: boolean; paused?: boolean }>;
+import { applyLiquidGlass, LiquidGlassPass } from "./LiquidGlass";
+import { BackgroundImage } from "./FloppyScene";
 import { DISC } from "./cd-case/disc";
 import type { Design } from "@/lib/types";
 import { isMiniDiscCart, MD_ASPECT } from "@/lib/media";
@@ -36,16 +38,12 @@ function Cartridge({ design }: { design: Design }) {
   // re-renders the disc and produced the "ghost" inside the case).
   const plastic = useMemo(() => {
     const o = design.opacity ?? 0.55;
-    const shimmer = design.glassShimmer ?? 0.3;
-    return new THREE.MeshPhysicalMaterial({
+    return applyLiquidGlass(new THREE.MeshPhysicalMaterial({
       color: design.shellNone ? "#e8eef4" : design.color,
       roughness: Math.max(0.05, design.roughness ?? 0.05),
       metalness: 0,
       clearcoat: 1,
       clearcoatRoughness: 0.04,
-      iridescence: shimmer,
-      iridescenceIOR: 1.6,
-      iridescenceThicknessRange: [120, 700],
       envMapIntensity: 1.6,
       specularIntensity: 1,
       transparent: true,
@@ -53,8 +51,8 @@ function Cartridge({ design }: { design: Design }) {
       opacity: Math.min(1, 0.22 + o * 0.78),
       depthWrite: false,
       side: THREE.FrontSide,
-    });
-  }, [design.color, design.opacity, design.roughness, design.glassShimmer, design.shellNone]);
+    }));
+  }, [design.color, design.opacity, design.roughness, design.shellNone]);
   const edgeMat = useMemo(
     () =>
       new THREE.LineBasicMaterial({
@@ -142,6 +140,8 @@ export function MiniDiscScene({ design, allowZoom, onDoubleTap }: Props) {
         <Canvas dpr={[1, 2]} camera={{ position: [0, 0, 5], fov: 35 }}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[3, 4, 5]} intensity={1.2} />
+          <BackgroundImage url={design.bgImage} />
+          <LiquidGlassPass design={design} />
           <Suspense fallback={null}>
             <Cartridge design={design} />
             <Environment resolution={128}>
