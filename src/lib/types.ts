@@ -119,6 +119,14 @@ export type Design = {
   plasticGrain?: number;
   /** rainbow glass shimmer at edges of clear plastic (0-1) */
   glassShimmer?: number;
+  /** Liquid Glass: how strongly clear plastic bends the background/inside (0-1) */
+  glassRefraction?: number;
+  /** Liquid Glass: rainbow fringing (0-1) */
+  glassDispersion?: number;
+  /** Liquid Glass: flowing wave distortion (0-1) */
+  glassWaves?: number;
+  /** Liquid Glass: rim highlights (0-1) */
+  glassGlint?: number;
   /** MiniDisc: disc reflective tint */
   discColor?: string;
   /** MiniDisc: size of clear plastic ring around the centre hub (0-1) */
