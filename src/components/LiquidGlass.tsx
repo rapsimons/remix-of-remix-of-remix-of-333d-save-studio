@@ -75,7 +75,7 @@ function cssBg(): THREE.Color {
     ctx.fillStyle = getComputedStyle(document.body).backgroundColor || "#f5f5f5";
     ctx.fillRect(0, 0, 1, 1);
     const d = ctx.getImageData(0, 0, 1, 1).data;
-    c.setRGB(d[0] / 255, d[1] / 255, d[2] / 255, THREE.SRGBColorSpace);
+    c.setRGB((d[0] ?? 240) / 255, (d[1] ?? 240) / 255, (d[2] ?? 240) / 255, THREE.SRGBColorSpace);
   } catch { /* keep default */ }
   return c;
 }
