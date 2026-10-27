@@ -1,3 +1,4 @@
+import { registerExportScene } from "@/lib/export3d";
 import CaseStageRaw from "./cd-case/CaseStage";
 import { Suspense, useMemo, type ComponentType } from "react";
 import { Canvas } from "@react-three/fiber";
@@ -137,7 +138,7 @@ export function MiniDiscScene({ design, allowZoom, onDoubleTap }: Props) {
   if (isMiniDiscCart(design)) {
     return (
       <div className="relative h-full w-full" onDoubleClick={onDoubleTap}>
-        <Canvas dpr={[1, 2]} camera={{ position: [0, 0, 5], fov: 35 }}>
+        <Canvas dpr={[1, 2]} camera={{ position: [0, 0, 5], fov: 35 }} onCreated={({ scene }) => registerExportScene(scene)}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[3, 4, 5]} intensity={1.2} />
           <BackgroundImage url={design.bgImage} />
