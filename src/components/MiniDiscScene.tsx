@@ -1,3 +1,4 @@
+import { registerExportScene } from "@/lib/export3d";
 import CaseStageRaw from "./cd-case/CaseStage";
 import { Suspense, useMemo, type ComponentType } from "react";
 import { Canvas } from "@react-three/fiber";
