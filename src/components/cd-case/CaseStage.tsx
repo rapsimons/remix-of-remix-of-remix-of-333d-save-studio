@@ -2,7 +2,7 @@
 // Imported verbatim from annnguyentt/vibe-coding cd-case
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
-import { registerExportScene } from '@/lib/export3d';
+import { registerExportScene, unregisterExportScene } from '@/lib/export3d';
 import { CASE, HALF, HINGE, discGeometry, lidGeometry, trayGeometry } from './caseGeometry';
 import {
   BACKDROP_FRAG,
@@ -827,7 +827,7 @@ function createStage(container, disc, { getPaused, getSpin, onOpen, onReady, onF
     setOpen: (on) => toggleOpen(on),
     dispose() {
       disposed = true;
-      registerExportScene(null);
+      unregisterExportScene(opaque);
       cancelAnimationFrame(raf);
       ro.disconnect();
       canvas.removeEventListener('webglcontextrestored', bakeRoom);

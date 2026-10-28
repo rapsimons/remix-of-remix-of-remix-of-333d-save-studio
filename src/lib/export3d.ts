@@ -11,6 +11,13 @@ export const registerExportScene = (s: THREE.Object3D | THREE.Object3D[] | null,
   currentScale = scale;
   version++;
 };
+/** Clear the registration only if it still belongs to this view (avoids swap races). */
+export const unregisterExportScene = (s: THREE.Object3D) => {
+  if (current?.includes(s)) {
+    current = null;
+    version++;
+  }
+};
 export const hasExportScene = () => !!current;
 export const exportSceneVersion = () => version;
 

@@ -12,6 +12,12 @@ import { useTheme } from "@/lib/useTheme";
 import { encodeDesign } from "@/lib/share";
 import { renderLabel } from "@/lib/labelCanvas";
 import { downloadBlob, export3dZip, hasExportScene } from "@/lib/export3d";
+
+const waitForScene = async (ms: number) => {
+  const end = Date.now() + ms;
+  while (!hasExportScene() && Date.now() < end) await new Promise((r) => setTimeout(r, 150));
+  return hasExportScene();
+};
 import { alignmentFor } from "@/lib/modelAlignment";
 import { defaultAlignment } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -72,11 +78,14 @@ export function Studio() {
   }
 
   async function export3d() {
-    if (!hasExportScene()) {
-      setToast("Open 3D view first");
+    setToast("Exporting…");
+    if (mode !== "view") setMode("view");
+    // give the 3D view time to mount and load its model
+    if (!(await waitForScene(8000))) {
+      setToast("3D view failed to load");
       return;
     }
-    setToast("Exporting…");
+    await new Promise((r) => setTimeout(r, mode === "view" ? 0 : 1200));
     try {
       const blob = await export3dZip(design);
       downloadBlob(blob, `${design.name || "model"}-3d.zip`);

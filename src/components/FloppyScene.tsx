@@ -1,4 +1,4 @@
-import { registerExportScene } from "@/lib/export3d";
+import { registerExportScene, unregisterExportScene } from "@/lib/export3d";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, useGLTF } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -819,7 +819,7 @@ export function ExportRegistrar() {
   const scene = useThree((s) => s.scene);
   useEffect(() => {
     registerExportScene(scene);
-    return () => registerExportScene(null);
+    return () => unregisterExportScene(scene);
   }, [scene]);
   return null;
 }
@@ -874,9 +874,8 @@ export function FloppyScene(props: Props) {
       camera={{ position: [0, 0, 4.2], fov: 42 }}
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
-      onCreated={({ gl, scene }) => {
+      onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        void scene;
       }}
     >
       <ExportRegistrar />
