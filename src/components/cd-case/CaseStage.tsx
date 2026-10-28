@@ -2,6 +2,7 @@
 // Imported verbatim from annnguyentt/vibe-coding cd-case
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
+import { registerExportScene } from '@/lib/export3d';
 import { CASE, HALF, HINGE, discGeometry, lidGeometry, trayGeometry } from './caseGeometry';
 import {
   BACKDROP_FRAG,
@@ -314,9 +315,13 @@ function createStage(container, disc, { getPaused, getSpin, onOpen, onReady, onF
     track(new THREE.ShaderMaterial({ uniforms: shadowOf, vertexShader: BACKDROP_VERT, fragmentShader: BACKDROP_FRAG })),
   );
   backdrop.position.z = BACKDROP_Z;
+  backdrop.userData.noExport = true;
   opaque.add(backdrop);
   const depthOnly = track(new THREE.MeshBasicMaterial({ colorWrite: false }));
+  copyQuad.userData.noExport = true;
   glass.add(copyQuad);
+  // case is modelled in millimetres; export in metres-ish units like the other models
+  registerExportScene([opaque, glass], 0.01);
 
   const samples = window.matchMedia('(pointer: coarse)').matches ? 1 : 2;
 
@@ -822,6 +827,7 @@ function createStage(container, disc, { getPaused, getSpin, onOpen, onReady, onF
     setOpen: (on) => toggleOpen(on),
     dispose() {
       disposed = true;
+      registerExportScene(null);
       cancelAnimationFrame(raf);
       ro.disconnect();
       canvas.removeEventListener('webglcontextrestored', bakeRoom);
