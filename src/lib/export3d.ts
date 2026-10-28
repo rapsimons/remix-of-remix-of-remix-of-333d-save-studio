@@ -157,7 +157,12 @@ export async function export3dZip(design: Design): Promise<Blob> {
     import("three/examples/jsm/exporters/GLTFExporter.js"),
     import("jszip"),
   ]);
-  const root = exportableClone(current, currentScale);
+  // the model may still be loading right after the 3D view opens
+  let root = exportableClone(current, currentScale);
+  for (let t = 0; !root.children.length && t < 40 && current; t++) {
+    await new Promise((r) => setTimeout(r, 200));
+    root = exportableClone(current, currentScale);
+  }
   if (!root.children.length) throw new Error("Nothing to export");
   const glb = (await withTimeout(
     new GLTFExporter().parseAsync(root, { binary: true, onlyVisible: true, maxTextureSize: MAX_TEX }),
