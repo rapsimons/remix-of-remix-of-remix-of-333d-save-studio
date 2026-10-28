@@ -1,4 +1,3 @@
-import { registerExportScene } from "@/lib/export3d";
 import CaseStageRaw from "./cd-case/CaseStage";
 import { Suspense, useMemo, type ComponentType } from "react";
 import { Canvas } from "@react-three/fiber";
@@ -7,7 +6,7 @@ import { createDiscMaterial, discGeometry, setDiscLights } from "@/lib/discShade
 import * as THREE from "three";
 const CaseStage = CaseStageRaw as unknown as ComponentType<{ disc: typeof DISC; spin?: boolean; paused?: boolean }>;
 import { applyLiquidGlass, LiquidGlassPass } from "./LiquidGlass";
-import { BackgroundImage } from "./FloppyScene";
+import { BackgroundImage, ExportRegistrar } from "./FloppyScene";
 import { DISC } from "./cd-case/disc";
 import type { Design } from "@/lib/types";
 import { isMiniDiscCart, MD_ASPECT } from "@/lib/media";
@@ -138,9 +137,10 @@ export function MiniDiscScene({ design, allowZoom, onDoubleTap }: Props) {
   if (isMiniDiscCart(design)) {
     return (
       <div className="relative h-full w-full" onDoubleClick={onDoubleTap}>
-        <Canvas dpr={[1, 2]} camera={{ position: [0, 0, 5], fov: 35 }} onCreated={({ scene }) => registerExportScene(scene)}>
+        <Canvas dpr={[1, 2]} camera={{ position: [0, 0, 5], fov: 35 }}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[3, 4, 5]} intensity={1.2} />
+          <ExportRegistrar />
           <BackgroundImage url={design.bgImage} />
           <LiquidGlassPass design={design} />
           <Suspense fallback={null}>

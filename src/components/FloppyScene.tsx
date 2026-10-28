@@ -1,4 +1,4 @@
-import { registerExportScene } from "@/lib/export3d";
+import { registerExportScene, unregisterExportScene } from "@/lib/export3d";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, useGLTF } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -814,6 +814,16 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   );
 }
 
+/** Makes the mounted scene the one the 3D export uses; clears it on unmount. */
+export function ExportRegistrar() {
+  const scene = useThree((s) => s.scene);
+  useEffect(() => {
+    registerExportScene(scene);
+    return () => unregisterExportScene(scene);
+  }, [scene]);
+  return null;
+}
+
 export function BackgroundImage({ url }: { url?: string | undefined }) {
   const { scene, gl } = useThree();
   useEffect(() => {
@@ -864,11 +874,11 @@ export function FloppyScene(props: Props) {
       camera={{ position: [0, 0, 4.2], fov: 42 }}
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
-      onCreated={({ gl, scene }) => {
+      onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        registerExportScene(scene);
       }}
     >
+      <ExportRegistrar />
       <ambientLight intensity={0.25} />
       <directionalLight position={[3, 4, 5]} intensity={1.1} />
       <directionalLight position={[-4, -2, -3]} intensity={0.45} />
