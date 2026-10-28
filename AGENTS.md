@@ -9,3 +9,4 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 - MiniDisc renders in its own scene (src/components/MiniDiscScene.tsx) with a parametric disc + src/lib/discShader.ts (ported cd-case DISC_FRAG); keeps GLB-based floppy/CD logic separate so changes can't break them.
+- Package 3D export ZIPs with STORE compression because GLB/PNG recompression blocks the browser without useful size savings.

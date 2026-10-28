@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Remove redundant 3D ZIP compression and verify actual downloads for every model variant
 - [ ] Restore original CD V1/V2/V3 fronts and native geometry, aligned faces, and sharp spectral backs
 - [ ] Remove expensive memory card normalization and verify switching and transparency
 - [ ] Save alignment independently for every model/version, including old workspace migration

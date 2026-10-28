@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { Design } from "./types";
 import { renderLabel } from "./labelCanvas";
+import type JSZip from "jszip";
 
 // The live three.js scene(s), registered by whichever 3D view is mounted.
 let current: THREE.Object3D[] | null = null;
@@ -152,7 +153,6 @@ function withTimeout<T>(p: Promise<T>, ms: number, msg: string): Promise<T> {
 }
 
 export async function export3dZip(design: Design): Promise<Blob> {
-  console.warn("EXP start", performance.now());
   if (!current) throw new Error("Open the 3D view first");
   const [{ GLTFExporter }, { default: JSZip }] = await Promise.all([
     import("three/examples/jsm/exporters/GLTFExporter.js"),
@@ -165,14 +165,12 @@ export async function export3dZip(design: Design): Promise<Blob> {
     root = exportableClone(current, currentScale);
   }
   if (!root.children.length) throw new Error("Nothing to export");
-  console.warn("EXP clone", root.children.length, performance.now());
   const glb = (await withTimeout(
     new GLTFExporter().parseAsync(root, { binary: true, onlyVisible: true, maxTextureSize: MAX_TEX }),
     60_000,
     "Export timed out",
   )) as ArrayBuffer;
 
-  console.warn("EXP glb", glb.byteLength, performance.now());
   const zip = new JSZip();
   zip.file("model.glb", glb);
   const tex = zip.folder("textures")!;
@@ -200,12 +198,16 @@ export async function export3dZip(design: Design): Promise<Blob> {
       }
     });
   });
-  console.warn("EXP tex", performance.now());
   zip.file(
     "design_metadata.json",
     JSON.stringify({ exportedAt: new Date().toISOString(), design: { ...design, front: undefined, back: undefined, bgImage: undefined } }, null, 2),
   );
-  return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+  return generate3dArchive(zip);
+}
+
+/** GLB and PNG payloads are already compact; do not recompress them on the UI thread. */
+export function generate3dArchive(zip: JSZip): Promise<Blob> {
+  return zip.generateAsync({ type: "blob", compression: "STORE" });
 }
 
 export function downloadBlob(blob: Blob, filename: string) {
