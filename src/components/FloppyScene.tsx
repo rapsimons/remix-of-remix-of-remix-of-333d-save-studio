@@ -814,6 +814,16 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   );
 }
 
+/** Makes the mounted scene the one the 3D export uses; clears it on unmount. */
+export function ExportRegistrar() {
+  const scene = useThree((s) => s.scene);
+  useEffect(() => {
+    registerExportScene(scene);
+    return () => registerExportScene(null);
+  }, [scene]);
+  return null;
+}
+
 export function BackgroundImage({ url }: { url?: string | undefined }) {
   const { scene, gl } = useThree();
   useEffect(() => {
@@ -866,9 +876,10 @@ export function FloppyScene(props: Props) {
       gl={{ antialias: true, alpha: true }}
       onCreated={({ gl, scene }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        registerExportScene(scene);
+        void scene;
       }}
     >
+      <ExportRegistrar />
       <ambientLight intensity={0.25} />
       <directionalLight position={[3, 4, 5]} intensity={1.1} />
       <directionalLight position={[-4, -2, -3]} intensity={0.45} />
