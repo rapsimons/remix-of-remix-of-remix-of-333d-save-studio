@@ -10,41 +10,13 @@ import { cdBackColor, isCd, labelAspect, labelDonut, modelUrlFor, CD_OUTER, CD_I
 import { alignmentFor } from "@/lib/modelAlignment";
 import { applyLiquidGlass, LiquidGlassPass } from "./LiquidGlass";
 import { createNativeDiscMaterial, setDiscLights } from "@/lib/discShader";
+import { plasticGrainNormal } from "@/lib/plasticSurface";
+import { StudioSoftboxes } from "./StudioSoftboxes";
 
 import cdModel from "@/assets/cd.glb.asset.json";
 import ps1Color from "@/assets/mcard-ps1-C.jpg.asset.json";
 import ps1Normal from "@/assets/mcard-ps1-N.jpg.asset.json";
 
-/** Tileable fine-grain height texture turned into a normal map. */
-let grainTex: THREE.CanvasTexture | null = null;
-function plasticGrainNormal() {
-  if (grainTex || typeof document === "undefined") return grainTex;
-  const n = 256, c = document.createElement("canvas");
-  c.width = c.height = n;
-  const ctx = c.getContext("2d")!;
-  const h = new Float32Array(n * n);
-  for (let i = 0; i < h.length; i++) h[i] = Math.random();
-  // soften once so the stipple reads as moulded texture, not noise
-  const s = new Float32Array(n * n);
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-    let a = 0;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) a += h[((y + dy + n) % n) * n + ((x + dx + n) % n)]!;
-    s[y * n + x] = a / 9;
-  }
-  const img = ctx.createImageData(n, n);
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-    const dx = s[y * n + ((x + 1) % n)]! - s[y * n + ((x - 1 + n) % n)]!;
-    const dy = s[((y + 1) % n) * n + x]! - s[((y - 1 + n) % n) * n + x]!;
-    const v = new THREE.Vector3(-dx * 4, -dy * 4, 1).normalize();
-    const o = (y * n + x) * 4;
-    img.data[o] = (v.x * 0.5 + 0.5) * 255; img.data[o + 1] = (v.y * 0.5 + 0.5) * 255; img.data[o + 2] = (v.z * 0.5 + 0.5) * 255; img.data[o + 3] = 255;
-  }
-  ctx.putImageData(img, 0, 0);
-  grainTex = new THREE.CanvasTexture(c);
-  grainTex.wrapS = grainTex.wrapT = THREE.RepeatWrapping;
-  grainTex.repeat.set(6, 6);
-  return grainTex;
-}
 import {
   createHoloMaterial,
   holoOverlayIndex,
@@ -355,9 +327,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       side: THREE.DoubleSide,
       depthWrite: design.opacity > 0.95,
       normalMap: !cd && grain > 0 ? plasticGrainNormal() : null,
-      normalScale: new THREE.Vector2(grain * 1.5, grain * 1.5),
+      normalScale: new THREE.Vector2(grain * 0.18, grain * 0.18),
       clearcoatNormalMap: !cd && grain > 0 ? plasticGrainNormal() : null,
-      clearcoatNormalScale: new THREE.Vector2(grain * 0.6, grain * 0.6),
+      clearcoatNormalScale: new THREE.Vector2(grain * 0.08, grain * 0.08),
     });
     return cd || metal > 0.6 ? mat : applyLiquidGlass(mat);
   }, [design.color, design.roughness, design.opacity, design.mediaType, metal, cd, grain]);
@@ -585,6 +557,10 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             mesh.renderOrder = 2;
           }
         }
+      } else if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
+        // Magnetic media is solid, not another piece of clear case plastic.
+        mesh.material = orig;
+        mesh.renderOrder = 0;
       } else if (mat.includes("metal") || mat === "ring" || name.includes("shutter")) {
         mesh.material = shutterNone ? orig : metalMaterial;
       } else if (mat.includes("sticker")) {
@@ -597,8 +573,6 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         mesh.visible = false;
       } else if (mat === "sony" || mat.startsWith("material.")) {
         mesh.material = orig;
-      } else if (name.includes("magnetic_disk") || name.includes("magnetic disk")) {
-        mesh.material = opticalDiscMaterial;
       } else {
         mesh.material = shellNone ? orig : material;
       }
@@ -900,6 +874,7 @@ export function FloppyScene(props: Props) {
           <Environment resolution={256} key={JSON.stringify(props.design.lights ?? []) + (props.design.bgImage ? "bg" : "")}>
             {/* one large soft key only — no strip panels that read as a room in the disc */}
             <Lightformer form="circle" intensity={isCd(props.design) ? 0.6 : 1.2} position={[0, 4, 3]} scale={[10, 10, 1]} />
+            {!isCd(props.design) && <StudioSoftboxes />}
             {/* huge, dim, off-screen gel panels — reflect as smooth colour falloff, never a hotspot */}
             {(props.design.lights ?? []).map((l) => (
               <Lightformer

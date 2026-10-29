@@ -10,3 +10,5 @@
 <!-- LOVABLE:END -->
 - MiniDisc renders in its own scene (src/components/MiniDiscScene.tsx) with a parametric disc + src/lib/discShader.ts (ported cd-case DISC_FRAG); keeps GLB-based floppy/CD logic separate so changes can't break them.
 - Package 3D export ZIPs with STORE compression because GLB/PNG recompression blocks the browser without useful size savings.
+- Liquid glass composites a depth-masked sharp solid pass over a separate warped background pass; keep solid media out of refraction and use geometric normals for edge-only spectral highlights.
+- Share the procedural plastic normal map and neutral softbox rig between cartridge scenes so material detail and bevel lighting stay consistent without altering native CD fronts.

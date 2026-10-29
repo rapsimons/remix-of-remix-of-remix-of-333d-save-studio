@@ -12,6 +12,8 @@ import type { Design } from "@/lib/types";
 import { isMiniDiscCart, MD_ASPECT } from "@/lib/media";
 import { useLabelTexture } from "@/lib/useLabelTextures";
 import mdParts from "@/assets/minidisc-parts.glb.asset.json";
+import { plasticGrainNormal } from "@/lib/plasticSurface";
+import { StudioSoftboxes } from "./StudioSoftboxes";
 
 type Props = {
   design: Design;
@@ -46,23 +48,17 @@ function Cartridge({ design }: { design: Design }) {
       clearcoatRoughness: 0.04,
       envMapIntensity: 1.6,
       specularIntensity: 1,
+      normalMap: plasticGrainNormal(),
+      normalScale: new THREE.Vector2((design.plasticGrain ?? 0.3) * 0.18, (design.plasticGrain ?? 0.3) * 0.18),
+      clearcoatNormalMap: plasticGrainNormal(),
+      clearcoatNormalScale: new THREE.Vector2((design.plasticGrain ?? 0.3) * 0.08, (design.plasticGrain ?? 0.3) * 0.08),
       transparent: true,
       // keep the case readable even when fully clear
       opacity: Math.min(1, 0.22 + o * 0.78),
       depthWrite: false,
       side: THREE.FrontSide,
     }));
-  }, [design.color, design.opacity, design.roughness, design.shellNone]);
-  const edgeMat = useMemo(
-    () =>
-      new THREE.LineBasicMaterial({
-        color: new THREE.Color(design.shellNone ? "#8a96a3" : design.color).multiplyScalar(0.7),
-        transparent: true,
-        opacity: 0.35 + (design.opacity ?? 0.55) * 0.4,
-        depthWrite: false,
-      }),
-    [design.color, design.opacity, design.shellNone],
-  );
+  }, [design.color, design.opacity, design.roughness, design.shellNone, design.plasticGrain]);
   const metal = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
@@ -82,16 +78,10 @@ function Cartridge({ design }: { design: Design }) {
       // the converted file ships without normals, which made the case unlit/invisible
       if (!m.geometry.attributes["normal"]) m.geometry.computeVertexNormals();
       m.material = isMetal ? metal : plastic;
-      if (!isMetal) {
-        // moulded edges/ribs so clear plastic reads against any background
-        const lines = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 25), edgeMat);
-        lines.renderOrder = 6;
-        m.add(lines);
-      }
       m.renderOrder = isMetal ? 2 : 5;
     });
     return s;
-  }, [gltf.scene, plastic, metal, edgeMat]);
+  }, [gltf.scene, plastic, metal]);
 
   // Same optical disc + shader as the CD, at the disc's true spot in the model.
   const R = 0.032;
@@ -106,9 +96,11 @@ function Cartridge({ design }: { design: Design }) {
   }, []);
   useMemo(() => {
     setDiscLights(discMat, design.lights ?? []);
-    (discMat.uniforms["uTint"]!.value as THREE.Color).set(design.discColor ?? "#ffffff");
+    const tint = discMat.uniforms["uTint"];
+    if (tint) (tint.value as THREE.Color).set(design.discColor ?? "#ffffff");
     // slider 0..1 → clear plastic ring from just past the hub to ~45% of the disc
-    discMat.uniforms["uDataIn"]!.value = 18 + (design.discHubRing ?? 0.3) * 20;
+    const dataIn = discMat.uniforms["uDataIn"];
+    if (dataIn) dataIn.value = 18 + (design.discHubRing ?? 0.3) * 20;
   }, [discMat, design.lights, design.discColor, design.discHubRing]);
 
   return (
@@ -146,10 +138,7 @@ export function MiniDiscScene({ design, allowZoom, onDoubleTap }: Props) {
           <Suspense fallback={null}>
             <Cartridge design={design} />
             <Environment resolution={128}>
-              <Lightformer intensity={1.5} position={[0, 4, 3]} scale={[8, 8, 1]} />
-              <Lightformer intensity={0.6} position={[-4, 0, 2]} rotation-y={Math.PI / 2} scale={[6, 6, 1]} />
-              <Lightformer intensity={1} color="#ffd0f0" position={[4, 1, 2]} rotation-y={-Math.PI / 2} scale={[6, 6, 1]} />
-              <Lightformer intensity={1} color="#c8f0ff" position={[0, -3, 4]} scale={[8, 3, 1]} />
+              <StudioSoftboxes />
             </Environment>
           </Suspense>
           <OrbitControls enablePan={false} enableZoom={!!allowZoom} autoRotate={design.autoRotate ?? false} />
