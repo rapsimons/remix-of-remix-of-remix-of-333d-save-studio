@@ -172,6 +172,7 @@ export function discGeometry(R: number, clearR: number, thick: number) {
   const pos: number[] = [];
   const nrm: number[] = [];
   const face: number[] = [];
+  const uvs: number[] = [];
   const index: number[] = [];
   const SEG = 192;
   const ring = (r0: number, r1: number, z: number, nz: number, rings: number, kind: number) => {
@@ -181,6 +182,7 @@ export function discGeometry(R: number, clearR: number, thick: number) {
       for (let i = 0; i < SEG; i++) {
         const a = (i / SEG) * Math.PI * 2;
         pos.push(r * Math.cos(a), r * Math.sin(a), z);
+        uvs.push(0.5 + (r * Math.cos(a)) / (2 * R), 0.5 + (r * Math.sin(a)) / (2 * R));
         nrm.push(0, 0, nz);
         face.push(kind);
       }
@@ -201,6 +203,7 @@ export function discGeometry(R: number, clearR: number, thick: number) {
       for (let i = 0; i < SEG; i++) {
         const a = (i / SEG) * Math.PI * 2;
         pos.push(r * Math.cos(a), r * Math.sin(a), z);
+        uvs.push(0.5 + (r * Math.cos(a)) / (2 * R), 0.5 + (r * Math.sin(a)) / (2 * R));
         nrm.push(out * Math.cos(a), out * Math.sin(a), 0);
         face.push(2);
       }
@@ -222,6 +225,7 @@ export function discGeometry(R: number, clearR: number, thick: number) {
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   g.setAttribute("aFace", new THREE.Float32BufferAttribute(face, 1));
   g.setIndex(index);
   g.computeBoundingSphere();
