@@ -53,9 +53,13 @@ function safeTexture(t: unknown, cache: Map<string, THREE.Texture | null>): THRE
       c.width = Math.max(1, Math.round(w * k));
       c.height = Math.max(1, Math.round(h * k));
       c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
-      out = tex.clone();
-      out.source = new THREE.Source(c);
-      out.needsUpdate = true;
+      const ct = new THREE.CanvasTexture(c);
+      ct.colorSpace = tex.colorSpace;
+      ct.flipY = tex.flipY;
+      ct.wrapS = tex.wrapS;
+      ct.wrapT = tex.wrapT;
+      ct.name = tex.name;
+      out = ct;
     }
   } catch {
     out = null;
@@ -184,6 +188,7 @@ export async function export3dZip(design: Design): Promise<Blob> {
   // Every texture embedded in the model, as loose PNGs.
   const seen = new Set<string>();
   let i = 0;
+  const loose: { name: string; img: HTMLCanvasElement }[] = [];
   root.traverse((o) => {
     const m = o as THREE.Mesh;
     if (!m.isMesh) return;
@@ -194,10 +199,18 @@ export async function export3dZip(design: Design): Promise<Blob> {
         const img = t.image as HTMLCanvasElement | undefined;
         if (!(img instanceof HTMLCanvasElement)) continue;
         seen.add(t.uuid);
-        tex.file(`${String(++i).padStart(2, "0")}-${(m.name || "mesh").replace(/\W+/g, "_")}-${k}.png`, canvasBlob(img));
+        loose.push({ name: `${String(++i).padStart(2, "0")}-${(m.name || "mesh").replace(/\W+/g, "_")}-${k}.png`, img });
       }
     });
   });
+  for (const l of loose) {
+    try {
+      const b = await withTimeout(canvasBlob(l.img), 10_000, "blob");
+      if (b) tex.file(l.name, b);
+    } catch {
+      /* skip */
+    }
+  }
   zip.file(
     "design_metadata.json",
     JSON.stringify({ exportedAt: new Date().toISOString(), design: { ...design, front: undefined, back: undefined, bgImage: undefined } }, null, 2),
