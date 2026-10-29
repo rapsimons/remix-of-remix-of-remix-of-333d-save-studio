@@ -1,6 +1,6 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useFBO } from "@react-three/drei";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import type { Design } from "@/lib/types";
 import { GLASS_EDGE_START, GLASS_EDGE_END } from "@/lib/glassRules";
@@ -97,8 +97,10 @@ function cssBg(): THREE.Color {
 /** Renders the scene minus glass into a buffer each frame for the glass to sample. */
 export function LiquidGlassPass({ design }: { design: Design }) {
   const { gl, scene, camera } = useThree();
-  const fbo = useFBO({ depth: true });
+  const depthTexture = useMemo(() => new THREE.DepthTexture(1, 1, THREE.UnsignedIntType), []);
+  const fbo = useFBO({ depthTexture });
   const backgroundFbo = useFBO();
+  useEffect(() => () => depthTexture.dispose(), [depthTexture]);
   useEffect(() => {
     LG.uLGClear.value.copy(cssBg());
   }, [design.updatedAt]);
