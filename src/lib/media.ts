@@ -3,6 +3,7 @@ import type { Design } from "./types";
 import floppyV2 from "@/assets/floppy-v2.glb.asset.json";
 import cdV2 from "@/assets/cd-v2.glb.asset.json";
 import cdV3 from "@/assets/cd-v3.glb.asset.json";
+import cdJewel from "@/assets/cd-jewel.glb.asset.json";
 import mcard from "@/assets/mcard.glb.asset.json";
 import mcardPs1 from "@/assets/mcard-ps1.glb.asset.json";
 
@@ -25,6 +26,7 @@ export function modelUrlFor(d: Pick<Design, "mediaType" | "modelVariant">, fallb
   if (m === "floppy" && v === "v2") return floppyV2.url;
   if (m === "cd" && v === "v2") return cdV2.url;
   if (m === "cd" && v === "v3") return cdV3.url;
+  if (m === "cd") return cdJewel.url;
   return fallback;
 }
 
