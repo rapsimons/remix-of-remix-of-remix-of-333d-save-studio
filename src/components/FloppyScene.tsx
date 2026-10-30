@@ -467,24 +467,26 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     design.holoOverlay,
   ]);
 
-  const clearPlasticMaterial = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color("#ffffff"),
-        metalness: 0,
-        roughness: 0.02,
-        transmission: 1,
-        thickness: 0.05,
-        ior: 1.58,
-        clearcoat: 1,
-        clearcoatRoughness: 0.02,
-        transparent: true,
-        opacity: 0.35,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      }),
-    [],
-  );
+  // CD case plastic: plain alpha blend (no transmission pass — that pass
+  // re-rendered the whole scene each frame, causing lag and a ghost copy)
+  const jewelV1 = cd && (design.modelVariant ?? "v1") === "v1";
+  const clearPlasticMaterial = useMemo(() => {
+    const op = jewelV1 ? Math.max(0.05, design.opacity ?? 0.2) : 0.35;
+    const rough = jewelV1 ? design.roughness ?? 0.02 : 0.02;
+    const met = jewelV1 ? design.metalness ?? 0 : 0;
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(jewelV1 && !design.shellNone ? design.color : "#ffffff"),
+      metalness: met,
+      roughness: Math.max(0.02, rough),
+      clearcoat: 1,
+      clearcoatRoughness: Math.max(0.02, rough * 0.5),
+      envMapIntensity: 1 + met,
+      transparent: op < 0.98,
+      opacity: op,
+      depthWrite: op >= 0.98,
+      side: op >= 0.98 ? THREE.FrontSide : THREE.DoubleSide,
+    });
+  }, [jewelV1, design.color, design.opacity, design.roughness, design.metalness, design.shellNone]);
 
   const variant = design.modelVariant ?? "v1";
   const ps1 = (design.mediaType ?? "floppy") === "ps1";
