@@ -70,7 +70,11 @@ vec3 lgSpec(float t){ return clamp(vec3(abs(t*6.0-3.0)-1.0, 2.0-abs(t*6.0-2.0), 
   float a = gl_FragColor.a;
   vec3 tinted = refr * mix(vec3(1.0), diffuseColor.rgb, a * 0.4 * (1.0 - solid));
   float coating = a * 0.55 * (1.0 - solid) + edge * a * 0.12;
-  gl_FragColor = vec4(mix(tinted, gl_FragColor.rgb, coating) + glint, 1.0);
+  // high opacity -> fully solid plastic; frost -> milky diffusion
+  coating = max(coating, smoothstep(0.6, 1.0, a));
+  coating = max(coating, clamp(roughnessFactor * 1.4, 0.0, 0.92));
+  coating = clamp(coating, 0.0, 1.0);
+  gl_FragColor = vec4(mix(tinted, gl_FragColor.rgb, coating) + glint * (1.0 - coating * 0.6), 1.0);
 }`,
       );
   };
@@ -96,10 +100,14 @@ function cssBg(): THREE.Color {
 
 /** Renders the scene minus glass into a buffer each frame for the glass to sample. */
 export function LiquidGlassPass({ design }: { design: Design }) {
-  const { gl, scene, camera } = useThree();
+  const { gl, scene, camera, size } = useThree();
+  // half-resolution buffers: the refracted image is blurred anyway, and this
+  // cuts the two extra scene renders per frame to a quarter of the pixels
+  const w = Math.max(1, Math.round(size.width * 0.75));
+  const h = Math.max(1, Math.round(size.height * 0.75));
   const depthTexture = useMemo(() => new THREE.DepthTexture(1, 1, THREE.UnsignedIntType), []);
-  const fbo = useFBO({ depthTexture });
-  const backgroundFbo = useFBO();
+  const fbo = useFBO(w, h, { depthTexture, samples: 0 });
+  const backgroundFbo = useFBO(w, h, { samples: 0, depthBuffer: false });
   useEffect(() => () => depthTexture.dispose(), [depthTexture]);
   useEffect(() => {
     LG.uLGClear.value.copy(cssBg());
