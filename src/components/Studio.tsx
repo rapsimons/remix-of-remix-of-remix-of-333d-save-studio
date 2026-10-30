@@ -36,6 +36,7 @@ export function Studio() {
   const [lockX, setLockX] = useState(false);
   const [lockY, setLockY] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [ready, setReady] = useState<File | null>(null);
   const stampRef = useRef<HTMLInputElement>(null);
   const bgRef = useRef<HTMLInputElement>(null);
   const [drawer, setDrawer] = useState<string | null>(null);
@@ -88,11 +89,29 @@ export function Studio() {
     await new Promise((r) => setTimeout(r, mode === "view" ? 0 : 1200));
     try {
       const blob = await export3dZip(design);
-      downloadBlob(blob, `${design.name || "model"}-3d.zip`);
-      setToast("3D model exported");
+      // Mobile browsers drop downloads after async work; ask for a fresh tap.
+      setToast(null);
+      setReady(new File([blob], `${design.name || "model"}-3d.zip`, { type: "application/zip" }));
     } catch (e) {
       setToast(e instanceof Error ? e.message : "Export failed");
     }
+  }
+
+  async function saveReady() {
+    if (!ready) return;
+    const file = ready;
+    const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+    if (nav.share && nav.canShare?.({ files: [file] })) {
+      try {
+        await nav.share({ files: [file], title: file.name });
+        setReady(null);
+        return;
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+      }
+    }
+    downloadBlob(file, file.name);
+    setReady(null);
   }
 
   return (
@@ -754,6 +773,22 @@ export function Studio() {
       {toast && (
         <div className="pointer-events-none fixed bottom-24 left-1/2 -translate-x-1/2 border border-hairline bg-background px-3 py-2 label-caps">
           {toast}
+        </div>
+      )}
+
+      {ready && (
+        <div className="fixed inset-x-0 bottom-24 z-50 mx-auto flex w-fit items-center gap-2 border border-hairline bg-background p-2">
+          <span className="label-caps px-1">3D model ready</span>
+          <button
+            type="button"
+            onClick={() => void saveReady()}
+            className="label-caps border border-hairline bg-foreground px-3 py-2 text-background"
+          >
+            Save
+          </button>
+          <button type="button" onClick={() => setReady(null)} className="label-caps px-2 py-2" aria-label="Dismiss">
+            ✕
+          </button>
         </div>
       )}
 
