@@ -618,6 +618,18 @@ export function Studio() {
                     <ColorRow label="Reflective color" value={cdBackColor(design)}
                       onChange={(v) => store.patch((d) => { d.cdBackStyle = "custom"; d.cdBackColor = v; })} />
                   </Drawer>
+                  {(design.modelVariant ?? "v1") === "v1" && (
+                    <Drawer title="Case" open={drawer === "cdcase"} onToggle={() => toggleDrawer("cdcase")}>
+                      <ColorRow label="Color" value={design.caseColor ?? "#ffffff"}
+                        onChange={(v) => store.patch((d) => void (d.caseColor = v))} />
+                      <Slider label="Clear ↔ solid" min={0.05} max={1} step={0.05} value={design.caseOpacity ?? 0.15}
+                        onChange={(v) => store.patch((d) => void (d.caseOpacity = v))} />
+                      <Slider label="Reflectiveness" min={0} max={1} step={0.01} value={design.caseMetalness ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.caseMetalness = v))} />
+                      <Slider label="Frost" min={0} max={1} step={0.01} value={design.caseRoughness ?? 0.02}
+                        onChange={(v) => store.patch((d) => void (d.caseRoughness = v))} />
+                    </Drawer>
+                  )}
                 </>
               ) : (
                 <>
