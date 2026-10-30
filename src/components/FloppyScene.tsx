@@ -204,10 +204,13 @@ function normalizeCd(scene: THREE.Object3D, flip = false) {
   // mirroring the print UVs in createNativeDiscMaterial, not by rotating
   // CD v2's print is authored on the -Z side: turn the disc so it faces front
   if (flip) object.children.forEach((n) => (n as THREE.Mesh).geometry.rotateX(Math.PI));
-  const box = new THREE.Box3().setFromObject(object, true);
+  // jewel case: the disc inside sets centre and scale so the print fits it
+  const jewelDisc = object.children.find((n) => ((n as THREE.Mesh).material as THREE.Material)?.name === "jeweldisc");
+  const box = new THREE.Box3().setFromObject(jewelDisc ?? object, true);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const scale = 2 / Math.max(size.x, size.y);
+  if (jewelDisc) size.copy(new THREE.Box3().setFromObject(object, true).getSize(new THREE.Vector3()));
   object.children.forEach((node) => {
     const mesh = node as THREE.Mesh;
     mesh.geometry.translate(-center.x, -center.y, -center.z);
@@ -544,7 +547,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         // the printed fronts keep the file's own material/texture untouched;
         // only V3's separate foil/bottom layers get the spectral back shader
         if (mat.includes("clearplastic")) mesh.material = clearPlasticMaterial;
-        else if (mat === "metalfoil" || mat === "discbottom") mesh.material = nativeMaterials.get(mesh) ?? orig;
+        else if (mat === "jewellabel") mesh.material = labelMaterial;
+        else if (mat === "metalfoil" || mat === "discbottom" || mat === "jeweldisc") mesh.material = nativeMaterials.get(mesh) ?? orig;
         else {
           mesh.material = orig;
           if (mat === "label") {
