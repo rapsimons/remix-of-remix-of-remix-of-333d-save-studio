@@ -471,11 +471,11 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   // re-rendered the whole scene each frame, causing lag and a ghost copy)
   const jewelV1 = cd && (design.modelVariant ?? "v1") === "v1";
   const clearPlasticMaterial = useMemo(() => {
-    const op = jewelV1 ? Math.max(0.05, design.opacity ?? 0.2) : 0.35;
-    const rough = jewelV1 ? design.roughness ?? 0.02 : 0.02;
-    const met = jewelV1 ? design.metalness ?? 0 : 0;
+    const op = jewelV1 ? Math.max(0.05, design.caseOpacity ?? 0.15) : 0.35;
+    const rough = jewelV1 ? design.caseRoughness ?? 0.02 : 0.02;
+    const met = jewelV1 ? design.caseMetalness ?? 0 : 0;
     return new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(jewelV1 && !design.shellNone ? design.color : "#ffffff"),
+      color: new THREE.Color(jewelV1 ? design.caseColor ?? "#ffffff" : "#ffffff"),
       metalness: met,
       roughness: Math.max(0.02, rough),
       clearcoat: 1,
@@ -486,7 +486,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       depthWrite: op >= 0.98,
       side: op >= 0.98 ? THREE.FrontSide : THREE.DoubleSide,
     });
-  }, [jewelV1, design.color, design.opacity, design.roughness, design.metalness, design.shellNone]);
+  }, [jewelV1, design.caseColor, design.caseOpacity, design.caseRoughness, design.caseMetalness]);
 
   const variant = design.modelVariant ?? "v1";
   const ps1 = (design.mediaType ?? "floppy") === "ps1";

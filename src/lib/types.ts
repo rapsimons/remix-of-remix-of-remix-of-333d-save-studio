@@ -131,6 +131,11 @@ export type Design = {
   discColor?: string;
   /** MiniDisc: size of clear plastic ring around the centre hub (0-1) */
   discHubRing?: number;
+  /** CD jewel case plastic (separate from cartridge shell settings) */
+  caseColor?: string;
+  caseOpacity?: number;
+  caseRoughness?: number;
+  caseMetalness?: number;
   updatedAt: number;
 };
 
