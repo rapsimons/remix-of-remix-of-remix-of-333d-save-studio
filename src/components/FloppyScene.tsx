@@ -11,6 +11,7 @@ import { alignmentFor } from "@/lib/modelAlignment";
 import { applyLiquidGlass, LiquidGlassPass } from "./LiquidGlass";
 import { createNativeDiscMaterial, setDiscLights } from "@/lib/discShader";
 import { plasticGrainNormal } from "@/lib/plasticSurface";
+import { metalFinish } from "@/lib/metalSurface";
 import { StudioSoftboxes } from "./StudioSoftboxes";
 
 import cdModel from "@/assets/cd.glb.asset.json";
@@ -407,6 +408,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     () =>
       new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(design.shutterColor ?? "#d7dce0"),
+        ...metalFinish(design.shutterBrushed, design.shutterIridescence),
         metalness: design.shutterMetalness ?? 1,
         roughness: design.shutterRoughness ?? 0.18,
         clearcoat: 0.35 + (1 - (design.shutterMetalness ?? 1)) * 0.6,
@@ -414,7 +416,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         envMapIntensity: 1 + (design.shutterMetalness ?? 1),
         side: THREE.DoubleSide,
       }),
-    [design.shutterColor, design.shutterMetalness, design.shutterRoughness],
+    [design.shutterColor, design.shutterMetalness, design.shutterRoughness, design.shutterBrushed, design.shutterIridescence],
   );
 
   const opticalDiscMaterial = useMemo(

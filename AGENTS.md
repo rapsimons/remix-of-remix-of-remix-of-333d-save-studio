@@ -12,3 +12,6 @@
 - Package 3D export ZIPs with STORE compression because GLB/PNG recompression blocks the browser without useful size savings.
 - Liquid glass composites a depth-masked sharp solid pass over a separate warped background pass; keep solid media out of refraction and use geometric normals for edge-only spectral highlights.
 - Share the procedural plastic normal map and neutral softbox rig between cartridge scenes so material detail and bevel lighting stay consistent without altering native CD fronts.
+- Keep liquid-glass solid buffers at canvas DPR and reduce only background buffers, so internal disc details stay sharp.
+- MiniDisc clear hub rings and outer rims use separate transparent PBR annuli, so ring sizing changes real clear geometry rather than just optical coloration.
+- Share directional brushed normals and PBR thin-film settings through metalSurface for shutter and hub finishes, keeping metal independent of case glass.

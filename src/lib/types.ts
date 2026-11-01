@@ -102,6 +102,10 @@ export type Design = {
   shutterColor?: string;
   shutterMetalness?: number;
   shutterRoughness?: number;
+  /** Directional brushed metal micro-grooves (0-1). */
+  shutterBrushed?: number;
+  /** Thin-film rainbow finish on metal parts (0-1). */
+  shutterIridescence?: number;
   /** image shown behind the 3D model (data URL) */
   bgImage?: string;
   /** how strongly the background image reflects in the models (0-2) */

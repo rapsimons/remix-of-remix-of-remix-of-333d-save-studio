@@ -1,5 +1,5 @@
 import CaseStageRaw from "./cd-case/CaseStage";
-import { Suspense, useMemo, type ComponentType } from "react";
+import { Suspense, useEffect, useMemo, type ComponentType } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import { createDiscMaterial, discGeometry, setDiscLights } from "@/lib/discShader";
@@ -13,6 +13,7 @@ import { isMiniDiscCart, MD_ASPECT } from "@/lib/media";
 import { useLabelTexture } from "@/lib/useLabelTextures";
 import mdParts from "@/assets/minidisc-parts.glb.asset.json";
 import { plasticGrainNormal } from "@/lib/plasticSurface";
+import { metalFinish } from "@/lib/metalSurface";
 import { StudioSoftboxes } from "./StudioSoftboxes";
 
 type Props = {
@@ -63,11 +64,12 @@ function Cartridge({ design }: { design: Design }) {
     () =>
       new THREE.MeshPhysicalMaterial({
         color: design.shutterColor ?? "#d9dce0",
+        ...metalFinish(design.shutterBrushed, design.shutterIridescence),
         metalness: design.shutterMetalness ?? 0.85,
         roughness: design.shutterRoughness ?? 0.35,
         side: THREE.DoubleSide,
       }),
-    [design.shutterColor, design.shutterMetalness, design.shutterRoughness],
+    [design.shutterColor, design.shutterMetalness, design.shutterRoughness, design.shutterBrushed, design.shutterIridescence],
   );
   const parts = useMemo(() => {
     const s = gltf.scene.clone(true);
@@ -85,27 +87,34 @@ function Cartridge({ design }: { design: Design }) {
 
   // Same optical disc + shader as the CD, at the disc's true spot in the model.
   const R = 0.032;
-  const discGeo = useMemo(() => discGeometry(R, 0.0076, 0.0012), []);
+  const innerRadius = R * (18 + (design.discHubRing ?? 0.3) * 20) / 60;
+  const outerRadius = R * 0.975;
+  const discGeo = useMemo(() => discGeometry(outerRadius, innerRadius, 0.0012), [innerRadius, outerRadius]);
+  const clearInnerGeo = useMemo(() => discGeometry(innerRadius, 0.0076, 0.0012), [innerRadius]);
+  const clearOuterGeo = useMemo(() => discGeometry(R, outerRadius, 0.0012), [outerRadius]);
+  const clearDiscPlastic = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: "#ffffff", transparent: true, opacity: 0.12, depthWrite: false,
+    roughness: 0.06, metalness: 0, clearcoat: 1, envMapIntensity: 1.2,
+    side: THREE.FrontSide,
+  }), []);
+  useEffect(() => () => {
+    discGeo.dispose(); clearInnerGeo.dispose(); clearOuterGeo.dispose();
+  }, [discGeo, clearInnerGeo, clearOuterGeo]);
+  useEffect(() => () => clearDiscPlastic.dispose(), [clearDiscPlastic]);
   const discMat = useMemo(() => {
-    const m = createDiscMaterial(R, 15.2, 59.1);
-    m.uniforms["uDataIn"] = { value: 21.5 };
-    m.fragmentShader = m.fragmentShader
-      .replace("uniform float uR;", "uniform float uR; uniform float uDataIn;")
-      .replace("smoothstep(21.5, 23.0, r)", "smoothstep(uDataIn, uDataIn + 1.5, r)");
-    return m;
+    return createDiscMaterial(R, 15.2, 59.1);
   }, []);
   useMemo(() => {
     setDiscLights(discMat, design.lights ?? []);
     const tint = discMat.uniforms["uTint"];
     if (tint) (tint.value as THREE.Color).set(design.discColor ?? "#ffffff");
-    // slider 0..1 → clear plastic ring from just past the hub to ~45% of the disc
-    const dataIn = discMat.uniforms["uDataIn"];
-    if (dataIn) dataIn.value = 18 + (design.discHubRing ?? 0.3) * 20;
-  }, [discMat, design.lights, design.discColor, design.discHubRing]);
+  }, [discMat, design.lights, design.discColor]);
 
   return (
     <group scale={20}>
       <mesh geometry={discGeo} material={discMat} position={[-0.00195, 0, 0.0007]} renderOrder={1} />
+      <mesh geometry={clearInnerGeo} material={clearDiscPlastic} position={[-0.00195, 0, 0.0007]} renderOrder={3} />
+      <mesh geometry={clearOuterGeo} material={clearDiscPlastic} position={[-0.00195, 0, 0.0007]} renderOrder={3} />
       <primitive object={parts} />
 
       {front && (
