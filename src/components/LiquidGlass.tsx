@@ -100,14 +100,13 @@ function cssBg(): THREE.Color {
 
 /** Renders the scene minus glass into a buffer each frame for the glass to sample. */
 export function LiquidGlassPass({ design }: { design: Design }) {
-  const { gl, scene, camera, size } = useThree();
-  // half-resolution buffers: the refracted image is blurred anyway, and this
-  // cuts the two extra scene renders per frame to a quarter of the pixels
-  const w = Math.max(1, Math.round(size.width * 0.75));
-  const h = Math.max(1, Math.round(size.height * 0.75));
+  const { gl, scene, camera, size, viewport } = useThree();
+  // Solid internals must match the retina canvas; only warped background is reduced.
+  const w = Math.max(1, Math.round(size.width * viewport.dpr));
+  const h = Math.max(1, Math.round(size.height * viewport.dpr));
   const depthTexture = useMemo(() => new THREE.DepthTexture(1, 1, THREE.UnsignedIntType), []);
   const fbo = useFBO(w, h, { depthTexture, samples: 0 });
-  const backgroundFbo = useFBO(w, h, { samples: 0, depthBuffer: false });
+  const backgroundFbo = useFBO(Math.max(1, Math.round(size.width * 0.75)), Math.max(1, Math.round(size.height * 0.75)), { samples: 0, depthBuffer: false });
   useEffect(() => () => depthTexture.dispose(), [depthTexture]);
   useEffect(() => {
     LG.uLGClear.value.copy(cssBg());

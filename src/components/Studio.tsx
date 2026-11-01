@@ -684,6 +684,10 @@ export function Studio() {
                       onChange={(v) => store.patch((d) => void (d.shutterMetalness = v))} />
                     <Slider label="Polish" min={0} max={1} step={0.01} value={1 - (design.shutterRoughness ?? 0.18)}
                       onChange={(v) => store.patch((d) => void (d.shutterRoughness = 1 - v))} />
+                    <Slider label="Brushed finish" min={0} max={1} step={0.01} value={design.shutterBrushed ?? 0.3}
+                      onChange={(v) => store.patch((d) => void (d.shutterBrushed = v))} />
+                    <Slider label="Iridescence" min={0} max={1} step={0.01} value={design.shutterIridescence ?? 0}
+                      onChange={(v) => store.patch((d) => void (d.shutterIridescence = v))} />
                   </Drawer>
                 </>
               )}
