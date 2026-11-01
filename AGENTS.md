@@ -15,3 +15,4 @@
 - Keep liquid-glass solid buffers at canvas DPR and reduce only background buffers, so internal disc details stay sharp.
 - MiniDisc clear hub rings and outer rims use separate transparent PBR annuli, so ring sizing changes real clear geometry rather than just optical coloration.
 - Share directional brushed normals and PBR thin-film settings through metalSurface for shutter and hub finishes, keeping metal independent of case glass.
+- Prepare private MiniDisc CAD metal geometry once per loaded model with outward shutter face winding and planar UVs; draw the shutter above the coplanar shell so both sides retain their metal finish.
