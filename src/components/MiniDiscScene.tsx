@@ -1,7 +1,7 @@
 import CaseStageRaw from "./cd-case/CaseStage";
 import { Suspense, useEffect, useMemo, type ComponentType } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Environment, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
+import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { createDiscMaterial, discGeometry, setDiscLights } from "@/lib/discShader";
 import * as THREE from "three";
 const CaseStage = CaseStageRaw as unknown as ComponentType<{ disc: typeof DISC; spin?: boolean; paused?: boolean }>;
@@ -29,15 +29,14 @@ const W = 0.0718;
 const H = 0.0682;
 const T = 0.00501;
 
-/** Repair a private copy of CAD metal; never mutate useGLTF's shared geometry. */
-function prepareMetalGeometry(source: THREE.BufferGeometry, shutter: boolean) {
+/** Add metal UVs without replacing the source CAD's outward face normals. */
+function prepareMetalGeometry(source: THREE.BufferGeometry) {
   const geometry = source.index ? source.toNonIndexed() : source.clone();
   const positions = geometry.getAttribute("position");
   if (!positions) return geometry;
   geometry.computeBoundingBox();
   const bounds = geometry.boundingBox;
   if (!bounds) return geometry;
-  const middleZ = (bounds.min.z + bounds.max.z) / 2;
   const a = new THREE.Vector3();
   const b = new THREE.Vector3();
   const c = new THREE.Vector3();
@@ -49,12 +48,6 @@ function prepareMetalGeometry(source: THREE.BufferGeometry, shutter: boolean) {
     b.fromBufferAttribute(positions, i + 1);
     c.fromBufferAttribute(positions, i + 2);
     normal.subVectors(b, a).cross(edge.subVectors(c, a)).normalize();
-    const faceZ = (a.z + b.z + c.z) / 3;
-    if (shutter && Math.abs(normal.z) > 0.5 && normal.z * (faceZ - middleZ) < 0) {
-      positions.setXYZ(i + 1, c.x, c.y, c.z);
-      positions.setXYZ(i + 2, b.x, b.y, b.z);
-      normal.negate();
-    }
     // Dominant-axis projection also gives the wrap-around edge usable UVs.
     const axis = Math.abs(normal.z) >= Math.max(Math.abs(normal.x), Math.abs(normal.y))
       ? "z" : Math.abs(normal.x) >= Math.abs(normal.y) ? "x" : "y";
@@ -66,9 +59,8 @@ function prepareMetalGeometry(source: THREE.BufferGeometry, shutter: boolean) {
       uvs[j * 2 + 1] = (a[v] - bounds.min[v]) / Math.max(bounds.max[v] - bounds.min[v], 0.000001);
     }
   }
-  positions.needsUpdate = true;
   geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
-  geometry.computeVertexNormals();
+  if (!geometry.getAttribute("normal")) geometry.computeVertexNormals();
   return geometry;
 }
 
@@ -126,7 +118,7 @@ function Cartridge({ design }: { design: Design }) {
       if (!m.isMesh) return;
       const name = `${m.name} ${m.parent?.name ?? ""}`.toLowerCase();
       m.geometry = /shutter|hub/.test(name)
-        ? prepareMetalGeometry(m.geometry, /shutter/.test(name))
+        ? prepareMetalGeometry(m.geometry)
         : m.geometry.clone();
       if (!m.geometry.attributes["normal"]) m.geometry.computeVertexNormals();
     });
@@ -206,6 +198,7 @@ export function MiniDiscScene({ design, allowZoom, onDoubleTap }: Props) {
         <Canvas dpr={[1, 2]} camera={{ position: [0, 0, 5], fov: 35 }}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[3, 4, 5]} intensity={1.2} />
+          <directionalLight position={[-3, 2, -5]} intensity={0.8} />
           <ExportRegistrar />
           <BackgroundImage url={design.bgImage} />
           <LiquidGlassPass design={design} />
