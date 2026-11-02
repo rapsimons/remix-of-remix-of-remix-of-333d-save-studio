@@ -1,4 +1,5 @@
 import { registerExportScene, unregisterExportScene } from "@/lib/export3d";
+import { McardPcb } from "./McardPcb";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, useGLTF } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -706,6 +707,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         position={[a.offsetX, a.offsetY, 0]}
       >
         <primitive object={object} />
+        {ps1 && variant === "v2" && <McardPcb />}
         {frontTex && !cd && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>
             <planeGeometry args={[faceW, faceH]} />
