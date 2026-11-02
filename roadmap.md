@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Apply approved rear metal lighting, preserve CAD normals, and refine horizontal hairline brushing from the reference
 - [x] Apply approved MiniDisc shutter winding, metal UVs, layer ordering and reflective finish defaults
 - [x] Apply approved sharp MiniDisc sampling, transparent hub/rim, and brushed/iridescent metal controls
 - [ ] Restrict liquid glass to plastic, preserve sharp internal parts, refine edge-only shimmer, stipple and softbox lighting
