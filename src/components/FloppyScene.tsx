@@ -738,7 +738,12 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       >
         <primitive object={object} />
         {psBranding && <primitive object={psBranding} />}
-        {ps1 && variant === "v2" && <McardPcb model={object} />}
+        {ps1 && variant === "v2" && (
+          <McardPcb model={object} fit={{
+            w: design.pcbWidth ?? 1, l: design.pcbLength ?? 1,
+            x: design.pcbX ?? 0, y: design.pcbY ?? 0, chips: design.pcbChips ?? 1,
+          }} />
+        )}
         {frontTex && !cd && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>
             <planeGeometry args={[faceW, faceH]} />

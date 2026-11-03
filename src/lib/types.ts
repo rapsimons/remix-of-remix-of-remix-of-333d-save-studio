@@ -119,6 +119,12 @@ export type Design = {
   mcLogo?: boolean;
   mcLabel?: boolean;
   mcLabelColor?: string;
+  /** Memory Card V2 circuit board fit: width/length multipliers, offsets, chip height */
+  pcbWidth?: number;
+  pcbLength?: number;
+  pcbX?: number;
+  pcbY?: number;
+  pcbChips?: number;
   /** fine moulded-plastic surface texture (0-1) */
   plasticGrain?: number;
   /** rainbow glass shimmer at edges of clear plastic (0-1) */
