@@ -667,8 +667,8 @@ export function Studio() {
                       <div className="grid grid-cols-2 gap-1">
                         <Btn label={design.modelVariant === "v2" ? "PlayStation text" : "Original print"} active={design.mcLogo === true}
                           onClick={() => store.patch((d) => void (d.mcLogo = d.mcLogo !== true))} />
-                        <Btn label="Paper label" active={design.mcLabel !== false}
-                          onClick={() => store.patch((d) => void (d.mcLabel = d.mcLabel === false))} />
+                        <Btn label="Paper label" active={design.mcLabel ?? design.modelVariant !== "v2"}
+                          onClick={() => store.patch((d) => void (d.mcLabel = !(d.mcLabel ?? d.modelVariant !== "v2")))} />
                       </div>
                       <ColorRow label="Label color" value={design.mcLabelColor ?? "#ffffff"}
                         none={!design.mcLabelColor}

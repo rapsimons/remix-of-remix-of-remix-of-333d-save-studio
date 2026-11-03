@@ -1,5 +1,6 @@
 import { registerExportScene, unregisterExportScene } from "@/lib/export3d";
 import { McardPcb } from "./McardPcb";
+import { keyMemoryCardPrint, memoryCardLabelVisible } from "@/lib/mcardInterior";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, useGLTF } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -495,24 +496,53 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
   const ps1 = (design.mediaType ?? "floppy") === "ps1";
   const shellNone = !!design.shellNone;
   const shutterNone = !!design.shutterNone;
-  // default off: the print lives on the original black skin, so enabling it
-  // trades the transparent shell for the dark original casing
+  // Print stays independent of the transparent plastic material.
   const mcLogo = design.mcLogo === true;
-  const mcLabel = design.mcLabel !== false;
+  const mcLabel = memoryCardLabelVisible(variant, design.mcLabel);
   const mcLabelColor = design.mcLabelColor;
 
-  // Memory Card casing keeps its original PlayStation print when enabled
-  const psShellMaterial = useMemo(() => {
-    if (!ps1) return null;
-    let map: THREE.Texture | null = null;
-    object.traverse((o) => {
-      const orig = (o as THREE.Mesh).userData?.["origMat"] as THREE.MeshStandardMaterial | undefined;
-      if (!map && orig?.name?.toLowerCase().includes("material.001") && orig.map) map = orig.map;
+  const psBranding = useMemo(() => {
+    if (!ps1 || variant !== "v2" || !mcLogo) return null;
+    const print = object.clone(true);
+    print.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const orig = (mesh.userData["origMat"] ?? mesh.material) as THREE.MeshStandardMaterial;
+      mesh.visible = false;
+      if (!orig.name.toLowerCase().includes("material.001") || !orig.map?.image) return;
+      const image = orig.map.image as HTMLImageElement;
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx || !canvas.width || !canvas.height) return;
+      ctx.drawImage(image, 0, 0);
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      keyMemoryCardPrint(pixels.data);
+      ctx.putImageData(pixels, 0, 0);
+      const map = orig.map.clone();
+      map.image = canvas;
+      map.needsUpdate = true;
+      mesh.material = new THREE.MeshBasicMaterial({
+        map, transparent: true, depthWrite: false, alphaTest: 0.01,
+        side: THREE.DoubleSide, polygonOffset: true,
+        polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+      });
+      mesh.visible = true;
+      mesh.renderOrder = 3;
     });
-    const m = material.clone();
-    if (mcLogo && map) m.map = map;
-    return m;
-  }, [ps1, object, material, mcLogo]);
+    return print;
+  }, [ps1, variant, mcLogo, object]);
+
+  useEffect(() => () => {
+    psBranding?.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.visible) return;
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      mat.map?.dispose();
+      mat.dispose();
+    });
+  }, [psBranding]);
 
   // PS1 card (v1): original colour + normal maps from the uploaded file
   const ps1Textured = useMemo(() => {
@@ -542,7 +572,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         if (mat === "ps1_shell") {
           mesh.material = mcLogo || shellNone ? ps1Textured ?? orig : material;
         } else if (mat.includes("material.001")) {
-          mesh.material = shellNone ? orig : psShellMaterial ?? material;
+          mesh.material = shellNone ? orig : material;
         } else if (mat.includes("material.002")) {
           mesh.visible = mcLabel;
           mesh.material = mcLabelColor ? labelMaterial : orig;
@@ -587,7 +617,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       }
     });
   }, [object, material, metalMaterial, opticalDiscMaterial, clearPlasticMaterial, nativeMaterials, cd, ps1, variant,
-    shellNone, shutterNone, psShellMaterial, labelMaterial, mcLabel, mcLabelColor, ps1Textured, mcLogo]);
+    shellNone, shutterNone, labelMaterial, mcLabel, mcLabelColor, ps1Textured, mcLogo]);
 
   // pointer gestures (drag to spin, pinch / wheel to zoom)
   useEffect(() => {
@@ -707,6 +737,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         position={[a.offsetX, a.offsetY, 0]}
       >
         <primitive object={object} />
+        {psBranding && <primitive object={psBranding} />}
         {ps1 && variant === "v2" && <McardPcb model={object} />}
         {frontTex && !cd && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>

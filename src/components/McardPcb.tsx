@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import * as THREE from "three";
+import { MCARD_PCB } from "@/lib/mcardInterior";
 import frontUrl from "@/assets/pcb-front-final.png.asset.json";
 import backUrl from "@/assets/pcb-back-final.png.asset.json";
 import backNrm from "@/assets/pcb-back-normal-final.png.asset.json";
@@ -13,8 +14,6 @@ const IMG_H = 1092;
 const HALF = 0.004;
 // From the real PS2 card interior: board is ~1.31x wider than the contact row,
 // and its top edge sits just above the contacts.
-const BOARD_PER_PINS = 1.31;
-const TOP_MARGIN = 0.02;
 
 /** Bounds of the card's built-in connector pins, in the model's parent space. */
 function pinsBounds(model: THREE.Object3D): THREE.Box3 | null {
@@ -27,7 +26,9 @@ function pinsBounds(model: THREE.Object3D): THREE.Box3 | null {
     const m = o as THREE.Mesh;
     if (!m.isMesh || !m.name.includes("Cube_Material004")) return;
     m.geometry.computeBoundingBox();
-    const b = m.geometry.boundingBox!.clone();
+    const bounds = m.geometry.boundingBox;
+    if (!bounds) return;
+    const b = bounds.clone();
     const rel = new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld);
     b.applyMatrix4(rel).applyMatrix4(model.matrix);
     box.union(b);
@@ -48,12 +49,8 @@ const CHIPS: [number, number, number, number, number][] = [
 export function McardPcb({ model }: { model: THREE.Object3D }) {
   const { W, H, X, Y, Z } = useMemo(() => {
     const b = pinsBounds(model);
-    // fallback: measured pin bounds of mcard.glb
-    const x0 = b?.min.x ?? -0.5952, x1 = b?.max.x ?? 0.604, top = b?.max.y ?? 0.9583;
-    const z = b ? (b.min.z + b.max.z) / 2 : 0;
-    const w = (x1 - x0) * BOARD_PER_PINS;
-    const h = (w * IMG_H) / IMG_W;
-    return { W: w, H: h, X: (x0 + x1) / 2, Y: top + TOP_MARGIN - h / 2, Z: z };
+    // Pins determine depth only; their whole mesh is not the board silhouette.
+    return { ...MCARD_PCB, Z: b ? (b.min.z + b.max.z) / 2 : 0 };
   }, [model]);
   const mats = useMemo(() => {
     const l = new THREE.TextureLoader();
@@ -85,7 +82,8 @@ export function McardPcb({ model }: { model: THREE.Object3D }) {
     const chip = new THREE.MeshStandardMaterial({ color: "#141414", roughness: 0.38, metalness: 0.05 });
     // chip tops show the printed markings from the photo
     const chipTops = CHIPS.map(([x0, y0, x1, y1]) => {
-      const t = back.map!.clone();
+      const t = back.map?.clone();
+      if (!t) return chip.clone();
       t.repeat.set((x1 - x0) / IMG_W, (y1 - y0) / IMG_H);
       t.offset.set(x0 / IMG_W, 1 - y1 / IMG_H);
       t.needsUpdate = true;
@@ -108,7 +106,7 @@ export function McardPcb({ model }: { model: THREE.Object3D }) {
           const h = ((y1 - y0) / IMG_H) * H;
           const cx = ((x0 + x1) / 2 / IMG_W - 0.5) * W;
           const cy = (0.5 - (y0 + y1) / 2 / IMG_H) * H;
-          const top = mats.chipTops[i]!;
+          const top = mats.chipTops[i] ?? mats.chip;
           return (
             <mesh
               key={i}
