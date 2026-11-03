@@ -46,12 +46,18 @@ const CHIPS: [number, number, number, number, number][] = [
 ];
 
 /** Memory Card V2 circuit board: traces face the front print, chips face the back. */
-export function McardPcb({ model }: { model: THREE.Object3D }) {
-  const { W, H, X, Y, Z } = useMemo(() => {
+export type PcbFit = { w: number; l: number; x: number; y: number; chips: number };
+
+export function McardPcb({ model, fit }: { model: THREE.Object3D; fit: PcbFit }) {
+  const Z = useMemo(() => {
     const b = pinsBounds(model);
     // Pins determine depth only; their whole mesh is not the board silhouette.
-    return { ...MCARD_PCB, Z: b ? (b.min.z + b.max.z) / 2 : 0 };
+    return b ? (b.min.z + b.max.z) / 2 : 0;
   }, [model]);
+  const W = MCARD_PCB.W * fit.w;
+  const H = MCARD_PCB.H * fit.l;
+  const X = MCARD_PCB.X + fit.x;
+  const Y = MCARD_PCB.Y + fit.y;
   const mats = useMemo(() => {
     const l = new THREE.TextureLoader();
     const tex = (u: string, srgb = false) => {
