@@ -10,10 +10,31 @@ import frontMetal from "@/assets/pcb-front-metalness-final.png.asset.json";
 // Source photos are 850x1092; both sides share one aligned silhouette.
 const IMG_W = 850;
 const IMG_H = 1092;
-const W = 1.3;
-const H = (W * IMG_H) / IMG_W;
-const Y = 0.06;
 const HALF = 0.004;
+// From the real PS2 card interior: board is ~1.31x wider than the contact row,
+// and its top edge sits just above the contacts.
+const BOARD_PER_PINS = 1.31;
+const TOP_MARGIN = 0.02;
+
+/** Bounds of the card's built-in connector pins, in the model's parent space. */
+function pinsBounds(model: THREE.Object3D): THREE.Box3 | null {
+  model.updateMatrix();
+  model.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(model.matrixWorld).invert();
+  const box = new THREE.Box3();
+  let found = false;
+  model.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || !m.name.includes("Cube_Material004")) return;
+    m.geometry.computeBoundingBox();
+    const b = m.geometry.boundingBox!.clone();
+    const rel = new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld);
+    b.applyMatrix4(rel).applyMatrix4(model.matrix);
+    box.union(b);
+    found = true;
+  });
+  return found ? box : null;
+}
 
 // chip rects in back-photo pixels: [x0, y0, x1, y1, height]
 const CHIPS: [number, number, number, number, number][] = [
@@ -24,7 +45,16 @@ const CHIPS: [number, number, number, number, number][] = [
 ];
 
 /** Memory Card V2 circuit board: traces face the front print, chips face the back. */
-export function McardPcb() {
+export function McardPcb({ model }: { model: THREE.Object3D }) {
+  const { W, H, X, Y, Z } = useMemo(() => {
+    const b = pinsBounds(model);
+    // fallback: measured pin bounds of mcard.glb
+    const x0 = b?.min.x ?? -0.5952, x1 = b?.max.x ?? 0.604, top = b?.max.y ?? 0.9583;
+    const z = b ? (b.min.z + b.max.z) / 2 : 0;
+    const w = (x1 - x0) * BOARD_PER_PINS;
+    const h = (w * IMG_H) / IMG_W;
+    return { W: w, H: h, X: (x0 + x1) / 2, Y: top + TOP_MARGIN - h / 2, Z: z };
+  }, [model]);
   const mats = useMemo(() => {
     const l = new THREE.TextureLoader();
     const tex = (u: string, srgb = false) => {
@@ -65,7 +95,7 @@ export function McardPcb() {
   }, []);
 
   return (
-    <group position={[0, Y, 0]}>
+    <group position={[X, Y, Z]}>
       <mesh position={[0, 0, HALF]} material={mats.front} renderOrder={-1}>
         <planeGeometry args={[W, H]} />
       </mesh>

@@ -707,7 +707,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         position={[a.offsetX, a.offsetY, 0]}
       >
         <primitive object={object} />
-        {ps1 && variant === "v2" && <McardPcb />}
+        {ps1 && variant === "v2" && <McardPcb model={object} />}
         {frontTex && !cd && (
           <mesh position={[0, 0, frontSurface + surfaceGap]}>
             <planeGeometry args={[faceW, faceH]} />
