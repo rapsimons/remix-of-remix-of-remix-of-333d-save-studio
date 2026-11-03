@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Apply approved reference-fitted Memory Card V2 PCB placement, hidden-by-default paper label, and independent transparent-keyed branding
 - [x] Apply approved rear metal lighting, preserve CAD normals, and refine horizontal hairline brushing from the reference
 - [x] Apply approved MiniDisc shutter winding, metal UVs, layer ordering and reflective finish defaults
 - [x] Apply approved sharp MiniDisc sampling, transparent hub/rim, and brushed/iridescent metal controls
