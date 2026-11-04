@@ -576,7 +576,11 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         } else if (mat.includes("material.002")) {
           mesh.visible = mcLabel;
           mesh.material = mcLabelColor ? labelMaterial : orig;
-        } else mesh.material = orig;
+        } else {
+          // V2: the file's built-in board strip is replaced by the PCB
+          if (variant === "v2" && mat.includes("material.004")) mesh.visible = false;
+          mesh.material = orig;
+        }
       } else if (cd) {
         // Each variant keeps every native vertex and its embedded front print.
         // the printed fronts keep the file's own material/texture untouched;

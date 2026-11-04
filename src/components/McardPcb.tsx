@@ -37,12 +37,13 @@ function pinsBounds(model: THREE.Object3D): THREE.Box3 | null {
   return found ? box : null;
 }
 
-// chip rects in back-photo pixels: [x0, y0, x1, y1, height]
+// chip bodies measured on the back photo: [x0, y0, x1, y1, height].
+// Stored as photo fractions at render time so they scale with the board.
 const CHIPS: [number, number, number, number, number][] = [
-  [180, 687, 710, 919, 0.022], // SONY flash
-  [500, 399, 635, 529, 0.018], // TERTA controller
+  [178, 712, 612, 956, 0.022], // SONY flash
+  [474, 384, 634, 546, 0.018], // TERTA controller
   [372, 335, 445, 372, 0.01], // L001
-  [680, 625, 735, 695, 0.01], // IC003
+  [674, 618, 728, 676, 0.01], // IC003
 ];
 
 /** Memory Card V2 circuit board: traces face the front print, chips face the back. */

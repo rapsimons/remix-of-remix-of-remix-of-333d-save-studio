@@ -674,21 +674,20 @@ export function Studio() {
                         none={!design.mcLabelColor}
                         onNone={(off) => store.patch((d) => { if (off) delete d.mcLabelColor; else d.mcLabelColor = "#ffffff"; })}
                         onChange={(v) => store.patch((d) => void (d.mcLabelColor = v))} />
-                      {design.modelVariant === "v2" && (
-                        <div className="space-y-2 border-t border-hairline pt-2">
-                          <span className="label-caps text-muted-foreground">Circuit board</span>
-                          <Slider label="PCB width" min={0.5} max={1.5} step={0.01} value={design.pcbWidth ?? 1}
-                            onChange={(v) => store.patch((d) => void (d.pcbWidth = v))} />
-                          <Slider label="PCB length" min={0.5} max={1.5} step={0.01} value={design.pcbLength ?? 1}
-                            onChange={(v) => store.patch((d) => void (d.pcbLength = v))} />
-                          <Slider label="PCB left / right" min={-0.5} max={0.5} step={0.01} value={design.pcbX ?? 0}
-                            onChange={(v) => store.patch((d) => void (d.pcbX = v))} />
-                          <Slider label="PCB up / down" min={-0.5} max={0.5} step={0.01} value={design.pcbY ?? 0}
-                            onChange={(v) => store.patch((d) => void (d.pcbY = v))} />
-                          <Slider label="Chip height" min={0} max={3} step={0.05} value={design.pcbChips ?? 1}
-                            onChange={(v) => store.patch((d) => void (d.pcbChips = v))} />
-                        </div>
-                      )}
+                    </Drawer>
+                  )}
+                  {design.mediaType === "ps1" && design.modelVariant === "v2" && (
+                    <Drawer title="Circuit board" open={drawer === "pcb"} onToggle={() => toggleDrawer("pcb")}>
+                      <Slider label="PCB width" min={0.5} max={1.5} step={0.01} value={design.pcbWidth ?? 1}
+                        onChange={(v) => store.patch((d) => void (d.pcbWidth = v))} />
+                      <Slider label="PCB length" min={0.5} max={1.5} step={0.01} value={design.pcbLength ?? 1}
+                        onChange={(v) => store.patch((d) => void (d.pcbLength = v))} />
+                      <Slider label="PCB left / right" min={-0.5} max={0.5} step={0.01} value={design.pcbX ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.pcbX = v))} />
+                      <Slider label="PCB up / down" min={-0.5} max={0.5} step={0.01} value={design.pcbY ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.pcbY = v))} />
+                      <Slider label="Chip height" min={0} max={3} step={0.05} value={design.pcbChips ?? 1}
+                        onChange={(v) => store.patch((d) => void (d.pcbChips = v))} />
                     </Drawer>
                   )}
                   <Drawer title="Metal parts" open={drawer === "metal"} onToggle={() => toggleDrawer("metal")}>
