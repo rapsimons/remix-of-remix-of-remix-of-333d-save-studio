@@ -18,3 +18,4 @@
 - Prepare private MiniDisc CAD metal geometry once per loaded model with planar UVs while preserving source normals and winding; draw the shutter above the coplanar shell to avoid depth conflicts without changing its surface orientation.
 - Illuminate both hemispheres in the shared cartridge softbox rig and give MiniDisc a rear directional light, because fully metallic rear faces need specular illumination rather than ambient fill.
 - Memory Card V2 uses reference-fitted PCB proportions; connector geometry supplies depth only. Render keyed branding as an independent print layer so it cannot darken or change the plastic shell.
+- PCB adjustments live in the design and drive both board faces and raised chips together, so sizing and placement stay aligned and survive workspace reloads.

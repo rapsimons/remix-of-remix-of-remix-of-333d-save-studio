@@ -116,10 +116,10 @@ export function McardPcb({ model, fit }: { model: THREE.Object3D; fit: PcbFit })
           return (
             <mesh
               key={i}
-              position={[cx, cy, d / 2]}
+               position={[cx, cy, d * fit.chips / 2]}
               material={[mats.chip, mats.chip, mats.chip, mats.chip, top, mats.chip]}
             >
-              <boxGeometry args={[w, h, d]} />
+               <boxGeometry args={[w, h, Math.max(0.0001, d * fit.chips)]} />
             </mesh>
           );
         })}
