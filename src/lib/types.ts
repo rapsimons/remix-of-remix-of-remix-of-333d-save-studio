@@ -142,6 +142,13 @@ export type Design = {
   discColor?: string;
   /** MiniDisc: size of clear plastic ring around the centre hub (0-1) */
   discHubRing?: number;
+  /** MiniDisc V3: which CD model sits inside, plus its fit */
+  mdCdModel?: "v1" | "v2" | "v3";
+  mdCdScale?: number;
+  mdCdX?: number;
+  mdCdY?: number;
+  mdCdZ?: number;
+  mdCdSpin?: number;
   /** CD jewel case plastic (separate from cartridge shell settings) */
   caseColor?: string;
   caseOpacity?: number;
