@@ -155,7 +155,7 @@ export function McardPcb({ model, fit }: { model: THREE.Object3D; fit: PcbFit })
           <planeGeometry args={[W, H]} />
         </mesh>
         {CONTACTS.map(([x0, y0, x1, y1], i) => (
-          <mesh key={`c${i}`} geometry={contactGeos[i]} material={mats.gold}
+          <mesh key={`c${i}`} geometry={contactGeos[i]!} material={mats.gold}
             position={[((x0 + x1) / 2 / IMG_W - 0.5) * W, (0.5 - (y0 + y1) / 2 / IMG_H) * H, 0.0015]} />
         ))}
         {CHIPS.map(([x0, y0, x1, y1, d], i) => {
