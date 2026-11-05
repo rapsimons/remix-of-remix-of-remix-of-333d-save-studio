@@ -14,7 +14,7 @@ export type ModelVariant = "v1" | "v2" | "v3";
 export const VARIANTS: Record<MediaType, ModelVariant[]> = {
   floppy: ["v1", "v2"],
   cd: ["v1", "v2", "v3"],
-  minidisc: ["v1", "v2"],
+  minidisc: ["v1", "v2", "v3"],
   ps1: ["v1", "v2"],
 };
 
@@ -39,7 +39,14 @@ export const isCd = (d: Pick<Design, "mediaType">) => mediaOf(d) === "cd";
 export const isMiniDisc = (d: Pick<Design, "mediaType">) => mediaOf(d) === "minidisc";
 /** MiniDisc V1: the real cartridge model (rectangular artwork). V2 is the jewel case. */
 export const isMiniDiscCart = (d: Pick<Design, "mediaType" | "modelVariant">) =>
-  isMiniDisc(d) && (d.modelVariant ?? "v1") === "v1";
+  isMiniDisc(d) && (d.modelVariant ?? "v1") !== "v2";
+/** MiniDisc V3: cartridge holding one of the CD models instead of its own disc. */
+export const isMiniDiscCdInside = (d: Pick<Design, "mediaType" | "modelVariant">) =>
+  isMiniDisc(d) && d.modelVariant === "v3";
+/** CD model shown inside MiniDisc V3. */
+export function innerCdUrl(v: ModelVariant | undefined) {
+  return v === "v1" ? cdJewel.url : v === "v2" ? cdV2.url : cdV3.url;
+}
 /** MiniDisc cartridge outline, 71.8 x 68.2 mm (matches the front drawing). */
 export const MD_ASPECT = 1280 / 1209;
 /** Round artwork (CD or the disc inside the jewel case). */
