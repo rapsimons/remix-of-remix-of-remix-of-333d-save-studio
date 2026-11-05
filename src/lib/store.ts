@@ -169,7 +169,7 @@ export const useStudio = create<State & Actions>((set, get) => ({
     const id = uid();
     const side = get().side;
     get().commit((d) => {
-      d[side].push({ ...o, id } as LabelObject);
+      (d[side] ??= []).push({ ...o, id } as LabelObject);
     });
     set({ selectedId: id });
   },
@@ -177,7 +177,7 @@ export const useStudio = create<State & Actions>((set, get) => ({
   updateObject(id, patchObj, history = true) {
     const side = get().side;
     const fn = (d: Design) => {
-      const obj = d[side].find((o) => o.id === id);
+      const obj = (d[side] ?? []).find((o) => o.id === id);
       if (obj) Object.assign(obj, patchObj);
     };
     history ? get().commit(fn) : get().patch(fn);
@@ -186,7 +186,7 @@ export const useStudio = create<State & Actions>((set, get) => ({
   removeObject(id) {
     const side = get().side;
     get().commit((d) => {
-      d[side] = d[side].filter((o) => o.id !== id);
+      d[side] = (d[side] ?? []).filter((o) => o.id !== id);
     });
     set({ selectedId: null });
   },

@@ -10,8 +10,9 @@ export function alignmentFor(d: Design): Alignment {
 }
 
 export function migrateAlignments(d: Design): Design {
-  if (d.modelAlignments) return d;
-  return { ...d, modelAlignments: { [alignmentKey(d)]: { ...defaultAlignment, ...d.alignment } } };
+  const withDisc = d.discFront && d.discBack ? d : { ...d, discFront: d.discFront ?? [], discBack: d.discBack ?? [] };
+  if (withDisc.modelAlignments) return withDisc;
+  return { ...withDisc, modelAlignments: { [alignmentKey(withDisc)]: { ...defaultAlignment, ...withDisc.alignment } } };
 }
 
 export function updateAlignment(d: Design, patch: Partial<Alignment>) {

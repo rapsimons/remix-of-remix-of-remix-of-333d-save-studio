@@ -1,4 +1,4 @@
-export type Side = "front" | "back";
+export type Side = "front" | "back" | "discFront" | "discBack";
 
 export type LabelObject = {
   id: string;
@@ -72,6 +72,9 @@ export type Design = {
   metalness?: number;
   front: LabelObject[];
   back: LabelObject[];
+  /** MiniDisc inner disc artwork (round, designed in 2D Disc mode) */
+  discFront: LabelObject[];
+  discBack: LabelObject[];
   links: MenuLink[];
   autoRotate: boolean;
   autoRotateSpeed: number;
@@ -142,6 +145,13 @@ export type Design = {
   discColor?: string;
   /** MiniDisc: size of clear plastic ring around the centre hub (0-1) */
   discHubRing?: number;
+  /** MiniDisc disc: centre hole size, rainbow strength, thickness, offsets */
+  discHole?: number;
+  discRainbow?: number;
+  discThick?: number;
+  discX?: number;
+  discY?: number;
+  discZ?: number;
   /** MiniDisc V3: which CD model sits inside, plus its fit */
   mdCdModel?: "v1" | "v2" | "v3";
   mdCdScale?: number;
@@ -177,6 +187,8 @@ export function createDesign(): Design {
     roughness: 0.05,
     front: [],
     back: [],
+    discFront: [],
+    discBack: [],
     links: [
       { id: uid(), label: "Save", icon: "save", url: "" },
       { id: uid(), label: "Share", icon: "share", url: "" },
