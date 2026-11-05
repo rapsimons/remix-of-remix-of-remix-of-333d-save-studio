@@ -125,6 +125,7 @@ export type Design = {
   pcbX?: number;
   pcbY?: number;
   pcbChips?: number;
+  pcbThickness?: number;
   /** fine moulded-plastic surface texture (0-1) */
   plasticGrain?: number;
   /** rainbow glass shimmer at edges of clear plastic (0-1) */
