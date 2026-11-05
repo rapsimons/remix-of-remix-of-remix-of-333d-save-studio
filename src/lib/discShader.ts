@@ -88,6 +88,9 @@ const FRAG = /* glsl */ `
   uniform float uEnvStr;
   uniform float uEnvBlur;
   uniform float uHasArt;
+  uniform sampler2D uArtBack;
+  uniform float uHasArtBack;
+  uniform float uRainbow;
   uniform float uR;
   uniform float uArtIn;
   uniform float uPrintOut;
@@ -139,6 +142,7 @@ const FRAG = /* glsl */ `
     } else {
       vec3 rainbow = grating(KEY, V, 0.05) * 1.6 + grating(STRIP, V, 0.045) * 1.4 +
         grating(TOP, V, 0.06) * 0.9 + grating(BOUNCE, V, 0.16) * 0.35;
+      rainbow *= uRainbow;
       for (int i = 0; i < 4; i++) {
         if (i >= uLn) break;
         rainbow += grating(uL[i], V, 0.06) * uLc[i] * 1.2;
@@ -149,6 +153,9 @@ const FRAG = /* glsl */ `
       if (vFace > 0.5) {
         vec3 mirror = min(studio(R), vec3(1.6)) * 0.5 + uTint * vec3(0.42, 0.44, 0.47) * (0.6 + 0.4 * max(dot(N, KEY), 0.0));
         col = (mirror + rainbow * data * 1.3) * ring;
+        vec4 bart = texture2D(uArtBack, vec2(1.0 - (vLocal.x / (2.0 * uR) + 0.5), vLocal.y / (2.0 * uR) + 0.5)) * uHasArtBack;
+        float bprint = bart.a * (1.0 - smoothstep(uPrintOut, uPrintOut + 0.4, r)) * smoothstep(uArtIn - 0.2, uArtIn + 0.2, r);
+        col = mix(col, bart.rgb * lights(N) + rainbow * data * 0.35, bprint);
         col = mix(col, edge, smoothstep(58.0, 58.9, r) * 0.85);
       } else {
         vec2 uv = vLocal.xy / (2.0 * uR) + 0.5;
@@ -244,6 +251,9 @@ export function createDiscMaterial(R: number, artIn: number, printOut: number) {
       uEnvStr: { value: 1 },
       uEnvBlur: { value: 0.3 },
       uHasArt: { value: 0 },
+      uArtBack: { value: null },
+      uHasArtBack: { value: 0 },
+      uRainbow: { value: 1 },
       uR: { value: R },
       uArtIn: { value: artIn },
       uPrintOut: { value: printOut },
