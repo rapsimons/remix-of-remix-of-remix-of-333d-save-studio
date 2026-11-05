@@ -654,7 +654,27 @@ export function Studio() {
                     <Slider label="Edge glint" min={0} max={1} step={0.01} value={design.glassGlint ?? 0.5}
                       onChange={(v) => store.patch((d) => void (d.glassGlint = v))} />
                   </Drawer>
-                  {design.mediaType === "minidisc" && design.modelVariant !== "v2" && (
+                  {design.mediaType === "minidisc" && design.modelVariant === "v3" && (
+                    <Drawer title="CD inside" open={drawer === "mdcd"} onToggle={() => toggleDrawer("mdcd")}>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(["v1", "v2", "v3"] as const).map((v) => (
+                          <Btn key={v} label={`CD ${v}`} active={(design.mdCdModel ?? "v3") === v}
+                            onClick={() => store.patch((d) => void (d.mdCdModel = v))} />
+                        ))}
+                      </div>
+                      <Slider label="Size" min={0.5} max={1.2} step={0.01} value={design.mdCdScale ?? 1}
+                        onChange={(v) => store.patch((d) => void (d.mdCdScale = v))} />
+                      <Slider label="Left / right" min={-0.5} max={0.5} step={0.01} value={design.mdCdX ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.mdCdX = v))} />
+                      <Slider label="Up / down" min={-0.5} max={0.5} step={0.01} value={design.mdCdY ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.mdCdY = v))} />
+                      <Slider label="Depth" min={-1} max={1} step={0.01} value={design.mdCdZ ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.mdCdZ = v))} />
+                      <Slider label="Rotate" min={0} max={360} step={1} value={design.mdCdSpin ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.mdCdSpin = v))} />
+                    </Drawer>
+                  )}
+                  {design.mediaType === "minidisc" && design.modelVariant !== "v2" && design.modelVariant !== "v3" && (
                     <Drawer title="Disc" open={drawer === "mddisc"} onToggle={() => toggleDrawer("mddisc")}>
                       <ColorRow label="Disc color" value={design.discColor ?? "#ffffff"}
                         onChange={(v) => store.patch((d) => void (d.discColor = v))} />

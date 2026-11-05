@@ -9,7 +9,7 @@ import { applyLiquidGlass, LiquidGlassPass } from "./LiquidGlass";
 import { BackgroundImage, ExportRegistrar } from "./FloppyScene";
 import { DISC } from "./cd-case/disc";
 import type { Design } from "@/lib/types";
-import { isMiniDiscCart, MD_ASPECT } from "@/lib/media";
+import { innerCdUrl, isMiniDiscCart, isMiniDiscCdInside, MD_ASPECT } from "@/lib/media";
 import { useLabelTexture } from "@/lib/useLabelTextures";
 import mdParts from "@/assets/minidisc-parts.glb.asset.json";
 import { plasticGrainNormal } from "@/lib/plasticSurface";
@@ -64,7 +64,64 @@ function prepareMetalGeometry(source: THREE.BufferGeometry) {
   return geometry;
 }
 
+/** A CD model (V1 disc, V2, V3) normalised to a 2-unit diameter, centred, facing +Z. */
+function InnerCd({ design }: { design: Design }) {
+  const which = design.mdCdModel ?? "v3";
+  const gltf = useGLTF(innerCdUrl(which));
+  const object = useMemo(() => {
+    const g = new THREE.Group();
+    gltf.scene.updateMatrixWorld(true);
+    gltf.scene.traverse((n) => {
+      const src = n as THREE.Mesh;
+      if (!src.isMesh) return;
+      const mat = (src.material as THREE.Material).name?.toLowerCase() ?? "";
+      // V1 is a jewel case: keep only the disc itself
+      if (which === "v1" && mat !== "jeweldisc") return;
+      const geo = src.geometry.clone();
+      if (which === "v2") geo.rotateX(Math.PI);
+      let material = src.material as THREE.Material;
+      if (mat.includes("clearplastic")) {
+        material = new THREE.MeshPhysicalMaterial({
+          color: "#ffffff", transparent: true, opacity: 0.15, depthWrite: false,
+          roughness: 0.05, clearcoat: 1, side: THREE.FrontSide,
+        });
+      } else if (mat === "label") {
+        const m = (material as THREE.MeshStandardMaterial).clone();
+        m.polygonOffset = true; m.polygonOffsetFactor = -4; m.polygonOffsetUnits = -4;
+        material = m;
+      }
+      const mesh = new THREE.Mesh(geo, material);
+      mesh.renderOrder = mat.includes("clearplastic") ? 3 : 1;
+      g.add(mesh);
+    });
+    const box = new THREE.Box3().setFromObject(g, true);
+    const size = box.getSize(new THREE.Vector3());
+    const c = box.getCenter(new THREE.Vector3());
+    const s = 2 / Math.max(size.x, size.y, 1e-6);
+    g.children.forEach((m) => {
+      const geo = (m as THREE.Mesh).geometry;
+      geo.translate(-c.x, -c.y, -c.z);
+      geo.scale(s, s, s);
+    });
+    return g;
+  }, [gltf.scene, which]);
+  useEffect(() => () => object.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.geometry.dispose();
+  }), [object]);
+  const R = 0.032 * (design.mdCdScale ?? 1);
+  return (
+    <group
+      position={[-0.00195 + (design.mdCdX ?? 0) * 0.01, (design.mdCdY ?? 0) * 0.01, 0.0007 + (design.mdCdZ ?? 0) * 0.002]}
+      rotation={[0, 0, ((design.mdCdSpin ?? 0) * Math.PI) / 180]}
+      scale={[R, R, R]}
+    >
+      <primitive object={object} />
+    </group>
+  );
+}
+
 function Cartridge({ design }: { design: Design }) {
+  const cdInside = isMiniDiscCdInside(design);
   // The original CAD file split into its real parts: two case halves, the
   // wrap-around metal slider, the write-protect tab and the metal centre hub.
   const gltf = useGLTF(mdParts.url);
@@ -169,9 +226,15 @@ function Cartridge({ design }: { design: Design }) {
 
   return (
     <group scale={20}>
-      <mesh geometry={discGeo} material={discMat} position={[-0.00195, 0, 0.0007]} renderOrder={1} />
-      <mesh geometry={clearInnerGeo} material={clearDiscPlastic} position={[-0.00195, 0, 0.0007]} renderOrder={3} />
-      <mesh geometry={clearOuterGeo} material={clearDiscPlastic} position={[-0.00195, 0, 0.0007]} renderOrder={3} />
+      {cdInside ? (
+        <InnerCd design={design} />
+      ) : (
+        <>
+          <mesh geometry={discGeo} material={discMat} position={[-0.00195, 0, 0.0007]} renderOrder={1} />
+          <mesh geometry={clearInnerGeo} material={clearDiscPlastic} position={[-0.00195, 0, 0.0007]} renderOrder={3} />
+          <mesh geometry={clearOuterGeo} material={clearDiscPlastic} position={[-0.00195, 0, 0.0007]} renderOrder={3} />
+        </>
+      )}
       <primitive object={parts} />
 
       {front && (
