@@ -746,6 +746,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
           <McardPcb model={object} fit={{
             w: design.pcbWidth ?? 1, l: design.pcbLength ?? 1,
             x: design.pcbX ?? 0, y: design.pcbY ?? 0, chips: design.pcbChips ?? 1,
+            thick: design.pcbThickness ?? 1,
           }} />
         )}
         {frontTex && !cd && (

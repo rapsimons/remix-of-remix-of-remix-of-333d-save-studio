@@ -686,6 +686,8 @@ export function Studio() {
                         onChange={(v) => store.patch((d) => void (d.pcbX = v))} />
                       <Slider label="PCB up / down" min={-0.5} max={0.5} step={0.01} value={design.pcbY ?? 0}
                         onChange={(v) => store.patch((d) => void (d.pcbY = v))} />
+                      <Slider label="PCB thickness" min={0.1} max={4} step={0.05} value={design.pcbThickness ?? 1}
+                        onChange={(v) => store.patch((d) => void (d.pcbThickness = v))} />
                       <Slider label="Chip height" min={0} max={3} step={0.05} value={design.pcbChips ?? 1}
                         onChange={(v) => store.patch((d) => void (d.pcbChips = v))} />
                     </Drawer>
