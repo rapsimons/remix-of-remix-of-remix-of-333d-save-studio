@@ -8,7 +8,7 @@ import * as THREE from "three";
 import type { Design } from "@/lib/types";
 import { useLabelTexture, useMoldTextures } from "@/lib/useLabelTextures";
 import { DEFAULT_MODEL_URL } from "@/lib/store";
-import { cdBackColor, isCd, labelAspect, labelDonut, modelUrlFor, CD_OUTER, CD_INNER } from "@/lib/media";
+import { cdBackColor, isCd, labelAspect, labelDonut, modelUrlFor, CD_OUTER, CD_INNER, JEWEL_ASPECT } from "@/lib/media";
 import { alignmentFor } from "@/lib/modelAlignment";
 import { applyLiquidGlass, LiquidGlassPass } from "./LiquidGlass";
 import { createNativeDiscMaterial, setDiscLights } from "@/lib/discShader";
@@ -478,7 +478,8 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
     const op = jewelV1 ? Math.max(0.05, design.caseOpacity ?? 0.15) : 0.35;
     const rough = jewelV1 ? design.caseRoughness ?? 0.02 : 0.02;
     const met = jewelV1 ? design.caseMetalness ?? 0 : 0;
-    return new THREE.MeshPhysicalMaterial({
+    const grain = jewelV1 ? (design.plasticGrain ?? 0.3) : 0;
+    const m = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(jewelV1 ? design.caseColor ?? "#ffffff" : "#ffffff"),
       metalness: met,
       roughness: Math.max(0.02, rough),
@@ -489,8 +490,19 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       opacity: op,
       depthWrite: op >= 0.98,
       side: op >= 0.98 ? THREE.FrontSide : THREE.DoubleSide,
+      ...(grain > 0 ? {
+        normalMap: plasticGrainNormal(),
+        normalScale: new THREE.Vector2(grain * 0.18, grain * 0.18),
+        clearcoatNormalMap: plasticGrainNormal(),
+        clearcoatNormalScale: new THREE.Vector2(grain * 0.08, grain * 0.08),
+      } : {}),
     });
-  }, [jewelV1, design.caseColor, design.caseOpacity, design.caseRoughness, design.caseMetalness]);
+    // same liquid-glass case effect as the cartridges; the disc stays solid
+    return jewelV1 ? applyLiquidGlass(m) : m;
+  }, [jewelV1, design.caseColor, design.caseOpacity, design.caseRoughness, design.caseMetalness, design.plasticGrain]);
+  const caseShell = { color: design.caseColor ?? "#ffffff", opacity: design.caseOpacity ?? 0.15 };
+  const caseFrontTex = useLabelTexture(jewelV1 ? design.caseFront ?? [] : [], 1024, "all", caseShell, JEWEL_ASPECT);
+  const caseBackTex = useLabelTexture(jewelV1 ? design.caseBack ?? [] : [], 1024, "all", caseShell, JEWEL_ASPECT);
 
   const variant = design.modelVariant ?? "v1";
   const ps1 = (design.mediaType ?? "floppy") === "ps1";
@@ -813,6 +825,20 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
             renderOrder={20}
           >
             <planeGeometry args={[faceW, faceH]} />
+          </mesh>
+        )}
+        {jewelV1 && caseFrontTex && (design.caseFront ?? []).length > 0 && (
+          <mesh position={[-0.0738, 0.0057, 0.0331 + surfaceGap]} renderOrder={8}>
+            <planeGeometry args={[2.327, 2.013]} />
+            <meshStandardMaterial map={caseFrontTex} transparent alphaTest={0.01} depthWrite={false} roughness={0.4}
+              polygonOffset polygonOffsetFactor={-2} />
+          </mesh>
+        )}
+        {jewelV1 && caseBackTex && (design.caseBack ?? []).length > 0 && (
+          <mesh position={[-0.0738, 0.0057, -0.1303 - surfaceGap]} rotation={[0, Math.PI, 0]} renderOrder={8}>
+            <planeGeometry args={[2.327, 2.013]} />
+            <meshStandardMaterial map={caseBackTex} transparent alphaTest={0.01} depthWrite={false} roughness={0.4}
+              polygonOffset polygonOffsetFactor={-2} />
           </mesh>
         )}
         {frontMoldMat && (
