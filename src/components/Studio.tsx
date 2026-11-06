@@ -228,6 +228,21 @@ export function Studio() {
           <div className="space-y-3 p-3">
             <div className="flex items-center justify-between">
               <div className="flex flex-wrap gap-2">
+                {isCd(design) && (design.modelVariant ?? "v1") === "v1" && (
+                  <div className="flex">
+                    {(["case", "cd"] as const).map((k) => {
+                      const on = (k === "case") === side.startsWith("case");
+                      const back = side === "back" || side === "caseBack";
+                      return (
+                        <button key={k} type="button"
+                          onClick={() => store.setSide(k === "case" ? (back ? "caseBack" : "caseFront") : (back ? "back" : "front"))}
+                          className={cn("label-caps border border-hairline px-3 py-1.5", on && "bg-foreground text-background")}>
+                          {k}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                 {design.mediaType === "minidisc" && design.modelVariant !== "v2" && (
                   <div className="flex">
                     {(["case", "disc"] as const).map((k) => {
@@ -244,7 +259,8 @@ export function Studio() {
                 )}
                 {(["front", "back"] as const).map((s) => {
                   const disc = side.startsWith("disc");
-                  const target = disc ? (s === "front" ? "discFront" : "discBack") : s;
+                  const kase = side.startsWith("case");
+                  const target = disc ? (s === "front" ? "discFront" : "discBack") : kase ? (s === "front" ? "caseFront" : "caseBack") : s;
                   return (
                     <button
                       key={s}
@@ -646,6 +662,16 @@ export function Studio() {
                         onChange={(v) => store.patch((d) => void (d.caseMetalness = v))} />
                       <Slider label="Frost" min={0} max={1} step={0.01} value={design.caseRoughness ?? 0.02}
                         onChange={(v) => store.patch((d) => void (d.caseRoughness = v))} />
+                      <Slider label="Plastic grain" min={0} max={1} step={0.01} value={design.plasticGrain ?? 0.3}
+                        onChange={(v) => store.patch((d) => void (d.plasticGrain = v))} />
+                      <Slider label="Glass refraction" min={0} max={1} step={0.01} value={design.glassRefraction ?? 0.5}
+                        onChange={(v) => store.patch((d) => void (d.glassRefraction = v))} />
+                      <Slider label="Rainbow dispersion" min={0} max={1} step={0.01} value={design.glassDispersion ?? 0.4}
+                        onChange={(v) => store.patch((d) => void (d.glassDispersion = v))} />
+                      <Slider label="Liquid waves" min={0} max={1} step={0.01} value={design.glassWaves ?? 0.3}
+                        onChange={(v) => store.patch((d) => void (d.glassWaves = v))} />
+                      <Slider label="Edge glint" min={0} max={1} step={0.01} value={design.glassGlint ?? 0.5}
+                        onChange={(v) => store.patch((d) => void (d.glassGlint = v))} />
                     </Drawer>
                   )}
                 </>
