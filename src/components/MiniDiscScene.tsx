@@ -201,11 +201,16 @@ function Cartridge({ design }: { design: Design }) {
 
   // Same optical disc + shader as the CD, at the disc's true spot in the model.
   const R = 0.032;
-  const innerRadius = R * (18 + (design.discHubRing ?? 0.3) * 20) / 60;
+  const holeR = R * (0.12 + (design.discHole ?? 0.5) * 0.24);
+  const innerRadius = Math.max(holeR + 0.0008, R * (18 + (design.discHubRing ?? 0.3) * 20) / 60);
   const outerRadius = R * 0.975;
-  const discGeo = useMemo(() => discGeometry(outerRadius, innerRadius, 0.0012), [innerRadius, outerRadius]);
-  const clearInnerGeo = useMemo(() => discGeometry(innerRadius, 0.0076, 0.0012), [innerRadius]);
-  const clearOuterGeo = useMemo(() => discGeometry(R, outerRadius, 0.0012), [outerRadius]);
+  const thick = 0.0012 * (design.discThick ?? 1);
+  const discGeo = useMemo(() => discGeometry(outerRadius, innerRadius, thick), [innerRadius, outerRadius, thick]);
+  const clearInnerGeo = useMemo(() => discGeometry(innerRadius, holeR, thick), [innerRadius, holeR, thick]);
+  const clearOuterGeo = useMemo(() => discGeometry(R, outerRadius, thick), [outerRadius, thick]);
+  const discFrontTex = useLabelTexture(design.discFront ?? [], 1024, "all", shell, 1);
+  const discBackTex = useLabelTexture(design.discBack ?? [], 1024, "all", shell, 1);
+  const discPos: [number, number, number] = [-0.00195 + (design.discX ?? 0) * 0.004, (design.discY ?? 0) * 0.004, 0.0007 + (design.discZ ?? 0) * 0.0015];
   const clearDiscPlastic = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: "#ffffff", transparent: true, opacity: 0.12, depthWrite: false,
     roughness: 0.06, metalness: 0, clearcoat: 1, envMapIntensity: 1.2,
@@ -222,7 +227,12 @@ function Cartridge({ design }: { design: Design }) {
     setDiscLights(discMat, design.lights ?? []);
     const tint = discMat.uniforms["uTint"];
     if (tint) (tint.value as THREE.Color).set(design.discColor ?? "#ffffff");
-  }, [discMat, design.lights, design.discColor]);
+    const u = discMat.uniforms;
+    u["uArt"]!.value = discFrontTex; u["uHasArt"]!.value = discFrontTex && (design.discFront ?? []).length ? 1 : 0;
+    u["uArtBack"]!.value = discBackTex; u["uHasArtBack"]!.value = discBackTex && (design.discBack ?? []).length ? 1 : 0;
+    u["uRainbow"]!.value = design.discRainbow ?? 1;
+    u["uArtIn"]!.value = (innerRadius / R) * 60;
+  }, [discMat, design.lights, design.discColor, discFrontTex, discBackTex, design.discFront, design.discBack, design.discRainbow, innerRadius]);
 
   return (
     <group scale={20}>
@@ -230,9 +240,9 @@ function Cartridge({ design }: { design: Design }) {
         <InnerCd design={design} />
       ) : (
         <>
-          <mesh geometry={discGeo} material={discMat} position={[-0.00195, 0, 0.0007]} renderOrder={1} />
-          <mesh geometry={clearInnerGeo} material={clearDiscPlastic} position={[-0.00195, 0, 0.0007]} renderOrder={3} />
-          <mesh geometry={clearOuterGeo} material={clearDiscPlastic} position={[-0.00195, 0, 0.0007]} renderOrder={3} />
+          <mesh geometry={discGeo} material={discMat} position={discPos} renderOrder={1} />
+          <mesh geometry={clearInnerGeo} material={clearDiscPlastic} position={discPos} renderOrder={3} />
+          <mesh geometry={clearOuterGeo} material={clearDiscPlastic} position={discPos} renderOrder={3} />
         </>
       )}
       <primitive object={parts} />
