@@ -238,7 +238,7 @@ export function Editor2D() {
       >
         {!cd && (<div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute inset-0 opacity-20" style={{ backgroundColor: design.color }} />
-          <div
+          {!caseMode && <div
             className="absolute inset-0"
             style={{
               backgroundColor: design.color,
@@ -252,7 +252,7 @@ export function Editor2D() {
               WebkitMaskPosition: "center",
               maskPosition: "center",
             }}
-          />
+          />}
           {md && <img src={wire} alt="" className="absolute inset-0 h-full w-full mix-blend-multiply" draggable={false} />}
         </div>)}
         {cd && (
