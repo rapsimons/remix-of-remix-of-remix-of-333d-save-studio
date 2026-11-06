@@ -47,6 +47,10 @@ export const isMiniDiscCdInside = (d: Pick<Design, "mediaType" | "modelVariant">
 export function innerCdUrl(v: ModelVariant | undefined) {
   return v === "v1" ? cdJewel.url : v === "v2" ? cdV2.url : cdV3.url;
 }
+/** CD V1 jewel case face, width / height of the clear case in the model. */
+export const JEWEL_ASPECT = 2.327 / 2.013;
+export const isCdJewel = (d: Pick<Design, "mediaType" | "modelVariant">) =>
+  isCd(d) && (d.modelVariant ?? "v1") === "v1";
 /** MiniDisc cartridge outline, 71.8 x 68.2 mm (matches the front drawing). */
 export const MD_ASPECT = 1280 / 1209;
 /** Round artwork (CD or the disc inside the jewel case). */

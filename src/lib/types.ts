@@ -1,4 +1,4 @@
-export type Side = "front" | "back" | "discFront" | "discBack";
+export type Side = "front" | "back" | "discFront" | "discBack" | "caseFront" | "caseBack";
 
 export type LabelObject = {
   id: string;
@@ -75,6 +75,9 @@ export type Design = {
   /** MiniDisc inner disc artwork (round, designed in 2D Disc mode) */
   discFront: LabelObject[];
   discBack: LabelObject[];
+  /** CD V1 jewel case artwork (rectangular, designed in 2D Case mode) */
+  caseFront?: LabelObject[];
+  caseBack?: LabelObject[];
   links: MenuLink[];
   autoRotate: boolean;
   autoRotateSpeed: number;
