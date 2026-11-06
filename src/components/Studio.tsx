@@ -259,7 +259,7 @@ export function Studio() {
                 )}
                 {(["front", "back"] as const).map((s) => {
                   const disc = side.startsWith("disc");
-                  const kase = side.startsWith("case");
+                  const kase = side.startsWith("case") && isCd(design) && (design.modelVariant ?? "v1") === "v1";
                   const target = disc ? (s === "front" ? "discFront" : "discBack") : kase ? (s === "front" ? "caseFront" : "caseBack") : s;
                   return (
                     <button

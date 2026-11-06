@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { CD_INNER, CD_OUTER, isMiniDiscCart, isRound, labelAspect } from "@/lib/media";
+import { CD_INNER, CD_OUTER, JEWEL_ASPECT, isMiniDiscCart, isRound, labelAspect } from "@/lib/media";
 import mdFront from "@/assets/minidisc-front-v2.png.asset.json";
 import mdBack from "@/assets/minidisc-back-v2.png.asset.json";
 import { CD_HOLE } from "@/lib/labelCanvas";
@@ -114,7 +114,9 @@ export function Editor2D() {
 
   const objects = design[side] ?? [];
   const discMode = side === "discFront" || side === "discBack";
-  const wireSide = side === "discBack" ? "back" : side === "discFront" ? "front" : side;
+  const caseMode = side === "caseFront" || side === "caseBack";
+  const wireSide = side === "discBack" || side === "caseBack" ? "back" : side === "discFront" || side === "caseFront" ? "front" : side;
+  const aspect = discMode ? 1 : caseMode ? JEWEL_ASPECT : labelAspect(design);
 
   const rect = () => ref.current!.getBoundingClientRect();
 
@@ -210,8 +212,8 @@ export function Editor2D() {
     }
   }
 
-  const cd = discMode || isRound(design);
-  const md = !discMode && isMiniDiscCart(design);
+  const cd = !caseMode && (discMode || isRound(design));
+  const md = !discMode && !caseMode && isMiniDiscCart(design);
   const wire = md ? (wireSide === "back" ? mdBack.url : mdFront.url) : wireSide === "back" ? backWireframe.url : frontWireframe.url;
   const hole = (discMode ? 0.12 + (design.discHole ?? 0.5) * 0.24 : CD_HOLE) * 100;
   const cdMask = `radial-gradient(circle closest-side, transparent ${hole}%, rgba(0,0,0,0.4) ${hole + 0.3}%, rgba(0,0,0,0.4) ${CD_INNER * 100}%, #000 ${CD_INNER * 100 + 0.3}%, #000 ${CD_OUTER * 100}%, rgba(0,0,0,0.25) ${CD_OUTER * 100 + 0.3}%, rgba(0,0,0,0.25) 99.6%, transparent 100%)`;
@@ -219,7 +221,7 @@ export function Editor2D() {
   return (
     <div
       className="relative mx-auto w-full max-w-[520px] touch-none select-none"
-      style={{ aspectRatio: String(discMode ? 1 : labelAspect(design)), maxWidth: `min(520px, calc(44svh * ${discMode ? 1 : labelAspect(design)}))` }}
+      style={{ aspectRatio: String(aspect), maxWidth: `min(520px, calc(44svh * ${aspect}))` }}
 
     >
       <div
