@@ -194,7 +194,7 @@ export const useStudio = create<State & Actions>((set, get) => ({
   raiseObject(id, dir) {
     const side = get().side;
     get().commit((d) => {
-      const list = (d[side] ??= []);
+      const list: LabelObject[] = d[side] ?? (d[side] = []);
       const i = list.findIndex((o) => o.id === id);
       const j = i + dir;
       if (i < 0 || j < 0 || j >= list.length) return;
