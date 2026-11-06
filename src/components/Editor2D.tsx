@@ -112,7 +112,9 @@ export function Editor2D() {
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const [, force] = useState(0);
 
-  const objects = design[side];
+  const objects = design[side] ?? [];
+  const discMode = side === "discFront" || side === "discBack";
+  const wireSide = side === "discBack" ? "back" : side === "discFront" ? "front" : side;
 
   const rect = () => ref.current!.getBoundingClientRect();
 
@@ -203,21 +205,21 @@ export function Editor2D() {
       const g = gesture.current;
       gesture.current = null;
       // commit current values into history
-      const obj = useStudio.getState().design[side].find((o) => o.id === g.id);
+      const obj = (useStudio.getState().design[side] ?? []).find((o) => o.id === g.id);
       if (obj) updateObject(g.id, { x: obj.x, y: obj.y, w: obj.w, rot: obj.rot }, true);
     }
   }
 
-  const cd = isRound(design);
-  const md = isMiniDiscCart(design);
-  const wire = md ? (side === "back" ? mdBack.url : mdFront.url) : side === "back" ? backWireframe.url : frontWireframe.url;
-  const hole = CD_HOLE * 100;
+  const cd = discMode || isRound(design);
+  const md = !discMode && isMiniDiscCart(design);
+  const wire = md ? (wireSide === "back" ? mdBack.url : mdFront.url) : wireSide === "back" ? backWireframe.url : frontWireframe.url;
+  const hole = (discMode ? 0.12 + (design.discHole ?? 0.5) * 0.24 : CD_HOLE) * 100;
   const cdMask = `radial-gradient(circle closest-side, transparent ${hole}%, rgba(0,0,0,0.4) ${hole + 0.3}%, rgba(0,0,0,0.4) ${CD_INNER * 100}%, #000 ${CD_INNER * 100 + 0.3}%, #000 ${CD_OUTER * 100}%, rgba(0,0,0,0.25) ${CD_OUTER * 100 + 0.3}%, rgba(0,0,0,0.25) 99.6%, transparent 100%)`;
 
   return (
     <div
       className="relative mx-auto w-full max-w-[520px] touch-none select-none"
-      style={{ aspectRatio: String(labelAspect(design)), maxWidth: `min(520px, calc(44svh * ${labelAspect(design)}))` }}
+      style={{ aspectRatio: String(discMode ? 1 : labelAspect(design)), maxWidth: `min(520px, calc(44svh * ${discMode ? 1 : labelAspect(design)}))` }}
 
     >
       <div

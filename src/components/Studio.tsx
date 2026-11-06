@@ -53,7 +53,7 @@ export function Studio() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const selected = design[side].find((o) => o.id === selectedId) ?? null;
+  const selected = (design[side] ?? []).find((o) => o.id === selectedId) ?? null;
 
   async function share() {
     const code = await encodeDesign(design);
@@ -71,7 +71,7 @@ export function Studio() {
   }
 
   async function download() {
-    const canvas = await renderLabel(design[side], 2048);
+    const canvas = await renderLabel(design[side] ?? [], 2048);
     const a = document.createElement("a");
     a.download = `${design.name}-${side}.png`;
     a.href = canvas.toDataURL("image/png");
@@ -227,20 +227,38 @@ export function Studio() {
         {mode === "design" && (
           <div className="space-y-3 p-3">
             <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                {(["front", "back"] as const).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => store.setSide(s)}
-                    className={cn(
-                      "label-caps border border-hairline px-3 py-1.5",
-                      side === s && "bg-foreground text-background",
-                    )}
-                  >
-                    {s}
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-2">
+                {design.mediaType === "minidisc" && design.modelVariant !== "v2" && (
+                  <div className="flex">
+                    {(["case", "disc"] as const).map((k) => {
+                      const on = (k === "disc") === side.startsWith("disc");
+                      return (
+                        <button key={k} type="button"
+                          onClick={() => store.setSide(k === "disc" ? (side === "back" || side === "discBack" ? "discBack" : "discFront") : (side === "discBack" || side === "back" ? "back" : "front"))}
+                          className={cn("label-caps border border-hairline px-3 py-1.5", on && "bg-foreground text-background")}>
+                          {k}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {(["front", "back"] as const).map((s) => {
+                  const disc = side.startsWith("disc");
+                  const target = disc ? (s === "front" ? "discFront" : "discBack") : s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => store.setSide(target)}
+                      className={cn(
+                        "label-caps border border-hairline px-3 py-1.5",
+                        side === target && "bg-foreground text-background",
+                      )}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
               </div>
               <div className="flex gap-1">
                 <Btn icon="undo" onClick={store.undo} disabled={store.past.length === 0} aria-label="Undo" />
@@ -540,7 +558,7 @@ export function Studio() {
             <section className="space-y-2 border border-hairline p-3">
               <span className="label-caps text-muted-foreground">Layers</span>
               <ul className="space-y-1">
-                {[...design[side]].reverse().map((o) => (
+                {[...(design[side] ?? [])].reverse().map((o) => (
                   <li key={o.id}>
                     <button
                       type="button"
@@ -555,7 +573,7 @@ export function Studio() {
                     </button>
                   </li>
                 ))}
-                {design[side].length === 0 && <li className="label-caps text-muted-foreground">Empty</li>}
+                {(design[side] ?? []).length === 0 && <li className="label-caps text-muted-foreground">Empty</li>}
               </ul>
             </section>
 
@@ -680,6 +698,18 @@ export function Studio() {
                         onChange={(v) => store.patch((d) => void (d.discColor = v))} />
                       <Slider label="Plastic around hub" min={0} max={1} step={0.01} value={design.discHubRing ?? 0.3}
                         onChange={(v) => store.patch((d) => void (d.discHubRing = v))} />
+                      <Slider label="Centre hole" min={0} max={1} step={0.01} value={design.discHole ?? 0.5}
+                        onChange={(v) => store.patch((d) => void (d.discHole = v))} />
+                      <Slider label="Rainbow shine" min={0} max={2} step={0.01} value={design.discRainbow ?? 1}
+                        onChange={(v) => store.patch((d) => void (d.discRainbow = v))} />
+                      <Slider label="Thickness" min={0.3} max={3} step={0.01} value={design.discThick ?? 1}
+                        onChange={(v) => store.patch((d) => void (d.discThick = v))} />
+                      <Slider label="Left/Right" min={-1} max={1} step={0.01} value={design.discX ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.discX = v))} />
+                      <Slider label="Up/Down" min={-1} max={1} step={0.01} value={design.discY ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.discY = v))} />
+                      <Slider label="Depth" min={-1} max={1} step={0.01} value={design.discZ ?? 0}
+                        onChange={(v) => store.patch((d) => void (d.discZ = v))} />
                     </Drawer>
                   )}
                   {design.mediaType === "ps1" && (
