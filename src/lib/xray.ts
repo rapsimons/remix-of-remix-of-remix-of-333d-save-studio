@@ -3,6 +3,17 @@ export type XraySettings = { mode?: "off" | "auto" | "always" | undefined; cycle
 
 const smooth = (t: number) => { const x = Math.min(1, Math.max(0, t)); return x * x * (3 - 2 * x); };
 
+export const XRAY_PALETTE = {
+  background: "#020208", shell: "#30216d", shellEdge: "#9291ff",
+  core: "#08a6bd", coreEdge: "#54faff", hot: "#d5ffff",
+};
+
+/** Name/material classification shared by surface density and feature outlines. */
+export function isXrayCore(name: string, metalness = 0, shader = false): boolean {
+  return /shutter|hub|disc|disk|pcb|chip|pin|metal|contact|gold|board|cube_material004/i.test(name)
+    || metalness >= 0.5 || shader;
+}
+
 export function xrayMix(turn: number, s: XraySettings): number {
   const mode = s.mode ?? "off";
   if (mode === "off") return 0;
