@@ -1,11 +1,11 @@
 {
-  "version": 1,
   "asset_id": "a56ae01d-1fa3-407d-84bb-57f58842dc3a",
-  "project_id": "5d57dcb0-5ca5-4fee-809f-611b670b72af",
-  "url": "/__l5e/assets-v1/a56ae01d-1fa3-407d-84bb-57f58842dc3a/minidisc-disc.png",
-  "r2_key": "a/v1/5d57dcb0-5ca5-4fee-809f-611b670b72af/a56ae01d-1fa3-407d-84bb-57f58842dc3a/minidisc-disc.png",
-  "original_filename": "minidisc-disc.png",
-  "size": 327034,
   "content_type": "image/png",
-  "created_at": "2026-10-25T13:00:09Z"
+  "created_at": "2026-10-25T13:00:09Z",
+  "original_filename": "minidisc-disc.png",
+  "project_id": "008a56fb-c9ba-41f7-9e6e-65a889f05b30",
+  "r2_key": "a/v1/008a56fb-c9ba-41f7-9e6e-65a889f05b30/a56ae01d-1fa3-407d-84bb-57f58842dc3a/minidisc-disc.png",
+  "size": 327034,
+  "url": "/__l5e/assets-v1/a56ae01d-1fa3-407d-84bb-57f58842dc3a/minidisc-disc.png",
+  "version": 1
 }
