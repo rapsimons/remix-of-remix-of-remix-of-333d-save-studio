@@ -1,5 +1,5 @@
 /** Pure X-ray timing rules: mix 0..1 from the model's accumulated turn angle. */
-export type XraySettings = { mode?: "off" | "auto" | "always"; cycle?: "half" | "full"; start?: number; hold?: number; fade?: number };
+export type XraySettings = { mode?: "off" | "auto" | "always" | undefined; cycle?: "half" | "full" | undefined; start?: number | undefined; hold?: number | undefined; fade?: number | undefined };
 
 const smooth = (t: number) => { const x = Math.min(1, Math.max(0, t)); return x * x * (3 - 2 * x); };
 
