@@ -497,8 +497,9 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         clearcoatNormalScale: new THREE.Vector2(grain * 0.08, grain * 0.08),
       } : {}),
     });
-    // same liquid-glass case effect as the cartridges; the disc stays solid
-    return jewelV1 ? applyLiquidGlass(m) : m;
+    // crisp clear polycarbonate — no liquid-glass screen pass here: the jewel
+    // case is 8 nested CAD meshes, and that pass turned it black and laggy
+    return m;
   }, [jewelV1, design.caseColor, design.caseOpacity, design.caseRoughness, design.caseMetalness, design.plasticGrain]);
   const caseShell = { color: design.caseColor ?? "#ffffff", opacity: design.caseOpacity ?? 0.15 };
   const caseFrontTex = useLabelTexture(jewelV1 ? design.caseFront ?? [] : [], 1024, "all", caseShell, JEWEL_ASPECT);
@@ -597,7 +598,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         // Each variant keeps every native vertex and its embedded front print.
         // the printed fronts keep the file's own material/texture untouched;
         // only V3's separate foil/bottom layers get the spectral back shader
-        if (mat.includes("clearplastic")) mesh.material = clearPlasticMaterial;
+         if (mat.includes("clearplastic")) mesh.material = design.caseNone ? orig : clearPlasticMaterial;
         else if (mat === "jewellabel") mesh.material = labelMaterial;
         else if (mat === "metalfoil" || mat === "discbottom" || mat === "jeweldisc") mesh.material = nativeMaterials.get(mesh) ?? orig;
         else {
