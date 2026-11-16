@@ -164,6 +164,8 @@ export type Design = {
   mdCdSpin?: number;
   /** CD jewel case plastic (separate from cartridge shell settings) */
   caseColor?: string;
+  /** "no colour": show the jewel case's original material instead of a tint */
+  caseNone?: boolean;
   caseOpacity?: number;
   caseRoughness?: number;
   caseMetalness?: number;
