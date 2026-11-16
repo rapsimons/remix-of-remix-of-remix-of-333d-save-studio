@@ -169,6 +169,13 @@ export type Design = {
   caseOpacity?: number;
   caseRoughness?: number;
   caseMetalness?: number;
+  /** X-ray CT look: off, linked to rotation, or always on */
+  xrayMode?: "off" | "auto" | "always";
+  xrayCycle?: "half" | "full";
+  xrayAmount?: number;
+  xrayStart?: number;
+  xrayHold?: number;
+  xrayFade?: number;
   updatedAt: number;
 };
 

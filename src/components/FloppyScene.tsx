@@ -1,3 +1,4 @@
+import { XrayController } from "./XrayController";
 import { registerExportScene, unregisterExportScene } from "@/lib/export3d";
 import { McardPcb } from "./McardPcb";
 import { keyMemoryCardPrint, memoryCardLabelVisible } from "@/lib/mcardInterior";
@@ -933,6 +934,7 @@ export function FloppyScene(props: Props) {
       }}
     >
       <ExportRegistrar />
+      <XrayController design={props.design} />
       <ambientLight intensity={0.25} />
       <directionalLight position={[3, 4, 5]} intensity={1.1} />
       <directionalLight position={[-4, -2, -3]} intensity={0.45} />
