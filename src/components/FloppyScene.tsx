@@ -488,8 +488,10 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
       envMapIntensity: 1 + met,
       transparent: op < 0.98,
       opacity: op,
-      depthWrite: op >= 0.98,
-      side: op >= 0.98 ? THREE.FrontSide : THREE.DoubleSide,
+      // the jewel case is 8 nested transparent CAD meshes: FrontSide +
+      // depthWrite keeps them sorting cleanly instead of a black jumble
+      depthWrite: jewelV1 || op >= 0.98,
+      side: jewelV1 || op >= 0.98 ? THREE.FrontSide : THREE.DoubleSide,
       ...(grain > 0 ? {
         normalMap: plasticGrainNormal(),
         normalScale: new THREE.Vector2(grain * 0.18, grain * 0.18),
