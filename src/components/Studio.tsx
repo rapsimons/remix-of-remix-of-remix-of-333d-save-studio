@@ -627,6 +627,26 @@ export function Studio() {
                 <Slider label="Speed" min={0} max={3} step={0.1} value={design.autoRotateSpeed}
                   onChange={(v) => store.patch((d) => void (d.autoRotateSpeed = v))} />
               </Drawer>
+              <Drawer title="X-ray" open={drawer === "xray"} onToggle={() => toggleDrawer("xray")}>
+                <div className="grid grid-cols-3 gap-1">
+                  {(["off", "auto", "always"] as const).map((m) => (
+                    <Btn key={m} icon={m === "off" ? "pause" : "play"} label={m === "off" ? "Off" : m === "auto" ? "On turn" : "Always"}
+                      active={(design.xrayMode ?? "off") === m} onClick={() => store.patch((d) => void (d.xrayMode = m))} />
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  <Btn icon="play" label="Every ½ turn" active={(design.xrayCycle ?? "half") === "half"} onClick={() => store.patch((d) => void (d.xrayCycle = "half"))} />
+                  <Btn icon="play" label="Every turn" active={design.xrayCycle === "full"} onClick={() => store.patch((d) => void (d.xrayCycle = "full"))} />
+                </div>
+                <Slider label="Strength" min={0} max={1} step={0.01} value={design.xrayAmount ?? 1}
+                  onChange={(v) => store.patch((d) => void (d.xrayAmount = v))} />
+                <Slider label="Start point" min={0} max={1} step={0.01} value={design.xrayStart ?? 0}
+                  onChange={(v) => store.patch((d) => void (d.xrayStart = v))} />
+                <Slider label="Hold (max = always on)" min={0} max={1} step={0.01} value={design.xrayHold ?? 0.4}
+                  onChange={(v) => store.patch((d) => void (d.xrayHold = v))} />
+                <Slider label="Fade in / out" min={0.02} max={0.5} step={0.01} value={design.xrayFade ?? 0.15}
+                  onChange={(v) => store.patch((d) => void (d.xrayFade = v))} />
+              </Drawer>
 
               {isCd(design) ? (
                 <>

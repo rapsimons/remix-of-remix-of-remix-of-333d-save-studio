@@ -1,3 +1,4 @@
+import { XrayController } from "./XrayController";
 import CaseStageRaw from "./cd-case/CaseStage";
 import { Suspense, useEffect, useMemo, type ComponentType } from "react";
 import { Canvas } from "@react-three/fiber";
@@ -273,6 +274,7 @@ export function MiniDiscScene({ design, allowZoom, onDoubleTap }: Props) {
           <directionalLight position={[3, 4, 5]} intensity={1.2} />
           <directionalLight position={[-3, 2, -5]} intensity={0.8} />
           <ExportRegistrar />
+          <XrayController design={design} />
           <BackgroundImage url={design.bgImage} />
           <LiquidGlassPass design={design} />
           <Suspense fallback={null}>
