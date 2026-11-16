@@ -14,7 +14,7 @@ void main(){ float f = 1.0 - abs(dot(normalize(vN), normalize(vV)));
   float edge = pow(f, uCore > 0.5 ? 1.2 : 2.2);
   vec3 c = mix(uColor, uHot, uCore * (1.0 - f) * 0.6);
   float a = uMix * (uCore > 0.5 ? 0.35 + edge * 0.65 : 0.08 + edge * 0.7);
-  gl_FragColor = vec4(c * a, a); }`;
+  gl_FragColor = vec4(c, a); }`;
 
 /** Rotation-linked CT-scan look: fades originals and adds additive density glow overlays. */
 export function XrayController({ design }: { design: Design }) {
@@ -23,9 +23,9 @@ export function XrayController({ design }: { design: Design }) {
   const mats = useMemo(() => {
     const make = (core: boolean) => new THREE.ShaderMaterial({
       vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false, depthTest: !core ? true : true,
-      blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      blending: THREE.NormalBlending, side: THREE.DoubleSide,
       uniforms: { uMix: uni.uMix, uCore: { value: core ? 1 : 0 },
-        uColor: { value: new THREE.Color(core ? "#22d3ee" : "#6366f1") }, uHot: { value: new THREE.Color("#ecfeff") } },
+        uColor: { value: new THREE.Color(core ? "#06b6d4" : "#3730a3") }, uHot: { value: new THREE.Color("#ecfeff") } },
     });
     return { core: make(true), shell: make(false) };
   }, [uni]);
