@@ -6,13 +6,13 @@ import { isXrayCore, XRAY_PALETTE, xrayMix } from "@/lib/xray";
 
 const vert = `varying vec3 vN; varying vec3 vV;
 void main(){ vec4 mv = modelViewMatrix*vec4(position,1.0); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`;
-const frag = `uniform float uMix; uniform vec3 uColor; uniform vec3 uHot; uniform float uCore;
+const frag = `uniform float uMix; uniform vec3 uColor; uniform vec3 uHot; uniform float uCore; uniform float uOpacity; uniform float uRim;
 varying vec3 vN; varying vec3 vV;
 void main(){
   float f = 1.0 - abs(dot(normalize(vN), normalize(vV)));
   float rim = pow(f, 1.4);
   vec3 c = mix(uColor, uHot, uCore * (0.22 + rim * 0.4));
-  float a = uMix * mix(0.09 + rim * 0.28, 0.19 + rim * 0.38, uCore);
+  float a = uMix * (uOpacity + rim * uRim);
   gl_FragColor = vec4(c, a);
   #include <colorspace_fragment>
 }`;
@@ -40,7 +40,7 @@ export function XrayController({ design }: { design: Design }) {
       vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false,
       depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
       toneMapped: false,
-      uniforms: { uMix: mix, uCore: { value: core ? 1 : 0 },
+      uniforms: { uMix: mix, uCore: { value: core ? 1 : 0 }, uOpacity: { value: core ? 0.19 : 0.09 }, uRim: { value: core ? 0.38 : 0.28 },
         uColor: { value: new THREE.Color(core ? XRAY_PALETTE.core : XRAY_PALETTE.shell) },
         uHot: { value: new THREE.Color(XRAY_PALETTE.hot) } },
     });
@@ -82,7 +82,9 @@ export function XrayController({ design }: { design: Design }) {
   useFrame(() => {
     const meshes: THREE.Mesh[] = [];
     scene.traverse((o) => {
-      if (o instanceof THREE.Mesh && !o.userData["xrayOverlay"] && !o.userData["noExport"]) meshes.push(o);
+      // sticker / print / mold planes are decals, not model geometry
+      if (o instanceof THREE.Mesh && !o.userData["xrayOverlay"] && !o.userData["noExport"]
+        && o.geometry.type !== "PlaneGeometry" && o.geometry.type !== "RingGeometry") meshes.push(o);
     });
     const reference = meshes[0];
     if (reference) {
@@ -103,8 +105,17 @@ export function XrayController({ design }: { design: Design }) {
     const on = amount > 0.001;
     fx.mix.value = amount;
     fx.backdrop.visible = on;
-    fx.coreEdge.opacity = amount * 0.85;
-    fx.shellEdge.opacity = amount * 0.6;
+    const set = (u: THREE.ShaderMaterial, color: string, op: number, glow: number) => {
+      (u.uniforms["uColor"]!.value as THREE.Color).set(color);
+      u.uniforms["uOpacity"]!.value = op; u.uniforms["uRim"]!.value = 0.3 * glow;
+    };
+    set(fx.shell, design.xrayShellColor ?? XRAY_PALETTE.shell, design.xrayShellOpacity ?? 0.09, design.xrayShellGlow ?? 1);
+    set(fx.core, design.xrayCoreColor ?? XRAY_PALETTE.core, design.xrayCoreOpacity ?? 0.19, design.xrayCoreGlow ?? 1);
+    fx.shellEdge.color.set(design.xrayShellEdgeColor ?? XRAY_PALETTE.shellEdge);
+    fx.coreEdge.color.set(design.xrayCoreEdgeColor ?? XRAY_PALETTE.coreEdge);
+    ((fx.backdrop.material as THREE.ShaderMaterial).uniforms["uColor"]!.value as THREE.Color).set(design.xrayBgColor ?? XRAY_PALETTE.background);
+    fx.coreEdge.opacity = Math.min(1, amount * 0.85 * (design.xrayCoreGlow ?? 1));
+    fx.shellEdge.opacity = Math.min(1, amount * 0.6 * (design.xrayShellGlow ?? 1));
 
     const release = (mesh: THREE.Mesh, entry: RecordEntry) => {
       if (mesh.material === entry.faded) mesh.material = entry.original;

@@ -1,3 +1,4 @@
+import { XRAY_PALETTE } from "@/lib/xray";
 import { useEffect, useRef, useState } from "react";
 import { Btn, Drawer, Field, Modal, Slider, inputClass } from "./ui/kit";
 import { Icon } from "./ui/Icon";
@@ -646,6 +647,24 @@ export function Studio() {
                   onChange={(v) => store.patch((d) => void (d.xrayHold = v))} />
                 <Slider label="Fade in / out" min={0.02} max={0.5} step={0.01} value={design.xrayFade ?? 0.15}
                   onChange={(v) => store.patch((d) => void (d.xrayFade = v))} />
+                <ColorRow label="Plastic body" value={design.xrayShellColor ?? XRAY_PALETTE.shell}
+                  onChange={(v) => store.patch((d) => void (d.xrayShellColor = v))} />
+                <ColorRow label="Plastic edges" value={design.xrayShellEdgeColor ?? XRAY_PALETTE.shellEdge}
+                  onChange={(v) => store.patch((d) => void (d.xrayShellEdgeColor = v))} />
+                <Slider label="Plastic translucency" min={0} max={0.6} step={0.01} value={design.xrayShellOpacity ?? 0.09}
+                  onChange={(v) => store.patch((d) => void (d.xrayShellOpacity = v))} />
+                <Slider label="Plastic glow" min={0} max={2} step={0.01} value={design.xrayShellGlow ?? 1}
+                  onChange={(v) => store.patch((d) => void (d.xrayShellGlow = v))} />
+                <ColorRow label="Interior faces" value={design.xrayCoreColor ?? XRAY_PALETTE.core}
+                  onChange={(v) => store.patch((d) => void (d.xrayCoreColor = v))} />
+                <ColorRow label="Interior edges" value={design.xrayCoreEdgeColor ?? XRAY_PALETTE.coreEdge}
+                  onChange={(v) => store.patch((d) => void (d.xrayCoreEdgeColor = v))} />
+                <Slider label="Interior translucency" min={0} max={0.8} step={0.01} value={design.xrayCoreOpacity ?? 0.19}
+                  onChange={(v) => store.patch((d) => void (d.xrayCoreOpacity = v))} />
+                <Slider label="Interior glow" min={0} max={2} step={0.01} value={design.xrayCoreGlow ?? 1}
+                  onChange={(v) => store.patch((d) => void (d.xrayCoreGlow = v))} />
+                <ColorRow label="Background" value={design.xrayBgColor ?? XRAY_PALETTE.background}
+                  onChange={(v) => store.patch((d) => void (d.xrayBgColor = v))} />
               </Drawer>
 
               {isCd(design) ? (

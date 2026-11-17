@@ -176,6 +176,17 @@ export type Design = {
   xrayStart?: number;
   xrayHold?: number;
   xrayFade?: number;
+  xrayShellColor?: string;
+  xrayShellEdgeColor?: string;
+  xrayCoreColor?: string;
+  xrayCoreEdgeColor?: string;
+  xrayBgColor?: string;
+  /** 0..1 body translucency for shell / interiors */
+  xrayShellOpacity?: number;
+  xrayCoreOpacity?: number;
+  /** 0..2 edge glow strength */
+  xrayShellGlow?: number;
+  xrayCoreGlow?: number;
   updatedAt: number;
 };
 
