@@ -29,18 +29,18 @@ function SawbladeDisc() {
     return t;
   }, []);
   // artwork spans 960px; disc body (no teeth) ~ 0.8 of it, so scale to match 2-unit CDs
-  const size = 2.3;
+  const size = 1.9;
   return (
     <group>
       <mesh renderOrder={4}>
         <planeGeometry args={[size, size]} />
-        <meshPhysicalMaterial map={tex} transparent alphaTest={0.02} metalness={0.6} roughness={0.25}
-          clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={1.2} depthWrite={false} side={THREE.FrontSide} toneMapped={false} />
+        <meshPhysicalMaterial map={tex} transparent alphaTest={0.35} metalness={0} roughness={0.3}
+          clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={0.6} depthWrite={false} side={THREE.FrontSide} toneMapped={false} />
       </mesh>
       <mesh rotation={[0, Math.PI, 0]} position={[0, 0, -0.004]} renderOrder={4}>
         <planeGeometry args={[size, size]} />
-        <meshPhysicalMaterial map={tex} transparent alphaTest={0.02} metalness={0.6} roughness={0.25}
-          clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={1.2} depthWrite={false} side={THREE.FrontSide} toneMapped={false} />
+        <meshPhysicalMaterial map={tex} transparent alphaTest={0.35} metalness={0} roughness={0.3}
+          clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={0.6} depthWrite={false} side={THREE.FrontSide} toneMapped={false} />
       </mesh>
     </group>
   );
