@@ -8,6 +8,11 @@ import { useStudio } from "@/lib/store";
 import type { LabelObject } from "@/lib/types";
 import frontWireframe from "@/assets/floppy-front.svg.asset.json";
 import backWireframe from "@/assets/floppy-back.svg.asset.json";
+import mc1F from "@/assets/mcard-ps1-front.svg.asset.json";
+import mc1B from "@/assets/mcard-ps1-back.svg.asset.json";
+import mc2F from "@/assets/mcard-ps2-front.svg.asset.json";
+import mc2B from "@/assets/mcard-ps2-back.svg.asset.json";
+const MC_ASPECT = 303 / 389;
 
 
 type Gesture =
@@ -116,7 +121,8 @@ export function Editor2D() {
   const discMode = side === "discFront" || side === "discBack";
   const caseMode = side === "caseFront" || side === "caseBack";
   const wireSide = side === "discBack" || side === "caseBack" ? "back" : side === "discFront" || side === "caseFront" ? "front" : side;
-  const aspect = discMode ? 1 : caseMode ? JEWEL_ASPECT : labelAspect(design);
+  const mc = design.mediaType === "ps1";
+  const aspect = discMode ? 1 : caseMode ? JEWEL_ASPECT : mc ? MC_ASPECT : labelAspect(design);
 
   const rect = () => ref.current!.getBoundingClientRect();
 
@@ -214,7 +220,8 @@ export function Editor2D() {
 
   const cd = !caseMode && (discMode || isRound(design));
   const md = !discMode && !caseMode && isMiniDiscCart(design);
-  const wire = md ? (wireSide === "back" ? mdBack.url : mdFront.url) : wireSide === "back" ? backWireframe.url : frontWireframe.url;
+  const mcWire = design.modelVariant === "v2" ? (wireSide === "back" ? mc2B.url : mc2F.url) : (wireSide === "back" ? mc1B.url : mc1F.url);
+  const wire = mc ? mcWire : md ? (wireSide === "back" ? mdBack.url : mdFront.url) : wireSide === "back" ? backWireframe.url : frontWireframe.url;
   const hole = (discMode ? 0.12 + (design.discHole ?? 0.5) * 0.24 : CD_HOLE) * 100;
   const cdMask = `radial-gradient(circle closest-side, transparent ${hole}%, rgba(0,0,0,0.4) ${hole + 0.3}%, rgba(0,0,0,0.4) ${CD_INNER * 100}%, #000 ${CD_INNER * 100 + 0.3}%, #000 ${CD_OUTER * 100}%, rgba(0,0,0,0.25) ${CD_OUTER * 100 + 0.3}%, rgba(0,0,0,0.25) 99.6%, transparent 100%)`;
 
@@ -253,7 +260,7 @@ export function Editor2D() {
               maskPosition: "center",
             }}
           />}
-          {md && <img src={wire} alt="" className="absolute inset-0 h-full w-full mix-blend-multiply" draggable={false} />}
+          {(md || mc) && <img src={wire} alt="" className="absolute inset-0 h-full w-full mix-blend-multiply" draggable={false} />}
         </div>)}
         {cd && (
           <div
