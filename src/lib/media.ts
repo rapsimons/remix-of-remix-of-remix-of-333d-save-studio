@@ -8,12 +8,12 @@ import mcard from "@/assets/mcard.glb.asset.json";
 import mcardPs1 from "@/assets/mcard-ps1.glb.asset.json";
 
 export type MediaType = "floppy" | "cd" | "minidisc" | "ps1";
-export type ModelVariant = "v1" | "v2" | "v3";
+export type ModelVariant = "v1" | "v2" | "v3" | "v4";
 
 /** Version choices offered per media type. */
 export const VARIANTS: Record<MediaType, ModelVariant[]> = {
   floppy: ["v1", "v2"],
-  cd: ["v1", "v2", "v3"],
+  cd: ["v1", "v2", "v3", "v4"],
   minidisc: ["v1", "v2", "v3"],
   ps1: ["v1", "v2"],
 };
@@ -25,7 +25,7 @@ export function modelUrlFor(d: Pick<Design, "mediaType" | "modelVariant">, fallb
   if (m === "ps1") return v === "v2" ? mcard.url : mcardPs1.url;
   if (m === "floppy" && v === "v2") return floppyV2.url;
   if (m === "cd" && v === "v2") return cdV2.url;
-  if (m === "cd" && v === "v3") return cdV3.url;
+  if (m === "cd" && (v === "v3" || v === "v4")) return cdV3.url; // v4 is image-based; loads v3 only for sizing
   if (m === "cd") return cdJewel.url;
   return fallback;
 }

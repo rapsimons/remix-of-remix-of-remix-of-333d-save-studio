@@ -94,7 +94,7 @@ export type Design = {
   /** which physical media is being designed */
   mediaType?: "floppy" | "cd" | "minidisc" | "ps1";
   /** which 3D model version to show for the media type */
-  modelVariant?: "v1" | "v2" | "v3";
+  modelVariant?: "v1" | "v2" | "v3" | "v4";
   /** CD reflective data side */
   cdBackStyle?: "silver" | "black" | "gold" | "custom";
   cdBackColor?: string;

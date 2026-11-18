@@ -18,6 +18,33 @@ import { metalFinish } from "@/lib/metalSurface";
 import { StudioSoftboxes } from "./StudioSoftboxes";
 
 import cdModel from "@/assets/cd.glb.asset.json";
+import cdV4Art from "@/assets/cd-v4-sawblade.png.asset.json";
+
+/** CD V4: saw-blade disc from artwork; clear hole, semi-transparent hub ring baked in its alpha. */
+function SawbladeDisc() {
+  const tex = useMemo(() => {
+    const t = new THREE.TextureLoader().load(cdV4Art.url);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    return t;
+  }, []);
+  // artwork spans 960px; disc body (no teeth) ~ 0.8 of it, so scale to match 2-unit CDs
+  const size = 2.3;
+  return (
+    <group>
+      <mesh renderOrder={4}>
+        <planeGeometry args={[size, size]} />
+        <meshPhysicalMaterial map={tex} transparent alphaTest={0.02} metalness={0.6} roughness={0.25}
+          clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={1.2} depthWrite={false} side={THREE.FrontSide} toneMapped={false} />
+      </mesh>
+      <mesh rotation={[0, Math.PI, 0]} position={[0, 0, -0.004]} renderOrder={4}>
+        <planeGeometry args={[size, size]} />
+        <meshPhysicalMaterial map={tex} transparent alphaTest={0.02} metalness={0.6} roughness={0.25}
+          clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={1.2} depthWrite={false} side={THREE.FrontSide} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
 import ps1Color from "@/assets/mcard-ps1-C.jpg.asset.json";
 import ps1Normal from "@/assets/mcard-ps1-N.jpg.asset.json";
 
@@ -756,7 +783,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         scale={a.scale}
         position={[a.offsetX, a.offsetY, 0]}
       >
-        <primitive object={object} />
+        {cd && variant === "v4" ? <SawbladeDisc /> : <primitive object={object} />}
         {psBranding && <primitive object={psBranding} />}
         {ps1 && variant === "v2" && (
           <McardPcb model={object} fit={{
