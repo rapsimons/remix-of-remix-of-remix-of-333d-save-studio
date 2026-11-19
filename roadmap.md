@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Apply approved CD V4 physical thickness, contour walls and reflective optical faces with live tint, lights and background controls
 - [x] Apply approved X-ray feature-edge glow, translucent density surfaces and rotation-linked dark backdrop
 - [x] Finish Memory Card V2 PCB width, length, position and chip-height sliders in the 3D Print & label panel
 - [x] Apply approved reference-fitted Memory Card V2 PCB placement, hidden-by-default paper label, and independent transparent-keyed branding

@@ -19,28 +19,47 @@ import { StudioSoftboxes } from "./StudioSoftboxes";
 
 import cdModel from "@/assets/cd.glb.asset.json";
 import cdV4Art from "@/assets/cd-v4-sawblade.png.asset.json";
+import { createSawbladeMaterial } from "@/lib/cdV4Shader";
+import { createSawbladeRimGeometry, CD_V4_DIAMETER, CD_V4_THICKNESS } from "@/lib/cdV4Contour";
 
 /** CD V4: saw-blade disc from artwork; clear hole, semi-transparent hub ring baked in its alpha. */
-function SawbladeDisc() {
+function SawbladeDisc({ design, background }: { design: Design; background: THREE.Texture | null }) {
   const tex = useMemo(() => {
     const t = new THREE.TextureLoader().load(cdV4Art.url);
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 8;
     return t;
   }, []);
-  // artwork spans 960px; disc body (no teeth) ~ 0.8 of it, so scale to match 2-unit CDs
-  const size = 1.9;
+  const front = useMemo(() => createSawbladeMaterial(tex, false), [tex]);
+  const back = useMemo(() => createSawbladeMaterial(tex, true), [tex]);
+  const rim = useMemo(() => createSawbladeRimGeometry(), []);
+  useEffect(() => {
+    for (const material of [front, back]) {
+      const tint = material.uniforms["uTint"];
+      const env = material.uniforms["uEnv"];
+      const hasEnv = material.uniforms["uHasEnv"];
+      const strength = material.uniforms["uEnvStr"];
+      const blur = material.uniforms["uEnvBlur"];
+      if (tint) (tint.value as THREE.Color).set(cdBackColor(design));
+      if (env) env.value = background;
+      if (hasEnv) hasEnv.value = background ? 1 : 0;
+      if (strength) strength.value = design.reflectStrength ?? 1;
+      if (blur) blur.value = design.reflectBlur ?? 0.3;
+      setDiscLights(material, design.lights ?? []);
+    }
+  }, [front, back, background, design.cdBackStyle, design.cdBackColor, design.reflectStrength, design.reflectBlur, design.lights]);
+  useEffect(() => () => { tex.dispose(); front.dispose(); back.dispose(); rim.dispose(); }, [tex, front, back, rim]);
   return (
     <group>
-      <mesh renderOrder={4}>
-        <planeGeometry args={[size, size]} />
-        <meshPhysicalMaterial map={tex} transparent alphaTest={0.35} metalness={0} roughness={0.3}
-          clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={0.6} depthWrite={false} side={THREE.FrontSide} toneMapped={false} />
+      <mesh position={[0, 0, CD_V4_THICKNESS / 2]} material={front}>
+        <planeGeometry args={[CD_V4_DIAMETER, CD_V4_DIAMETER]} />
       </mesh>
-      <mesh rotation={[0, Math.PI, 0]} position={[0, 0, -0.004]} renderOrder={4}>
-        <planeGeometry args={[size, size]} />
-        <meshPhysicalMaterial map={tex} transparent alphaTest={0.35} metalness={0} roughness={0.3}
-          clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={0.6} depthWrite={false} side={THREE.FrontSide} toneMapped={false} />
+      <mesh rotation={[0, Math.PI, 0]} position={[0, 0, -CD_V4_THICKNESS / 2]} material={back}>
+        <planeGeometry args={[CD_V4_DIAMETER, CD_V4_DIAMETER]} />
+      </mesh>
+      <mesh geometry={rim}>
+        <meshPhysicalMaterial color="#dce4eb" transparent opacity={0.65} roughness={0.1}
+          metalness={0.15} ior={1.58} clearcoat={1} side={THREE.DoubleSide} />
       </mesh>
     </group>
   );
@@ -783,7 +802,7 @@ function Floppy({ design, modelUrl, flat, lockX, lockY, onDoubleTap, interactive
         scale={a.scale}
         position={[a.offsetX, a.offsetY, 0]}
       >
-        {cd && variant === "v4" ? <SawbladeDisc /> : <primitive object={object} />}
+        {cd && variant === "v4" ? <SawbladeDisc design={design} background={bgTex} /> : <primitive object={object} />}
         {psBranding && <primitive object={psBranding} />}
         {ps1 && variant === "v2" && (
           <McardPcb model={object} fit={{
