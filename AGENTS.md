@@ -21,3 +21,4 @@
 - PCB adjustments live in the design and drive both board faces and raised chips together, so sizing and placement stay aligned and survive workspace reloads.
 - X-ray uses private fading material clones and cached feature-edge overlays; restore native materials/background and dispose overlays on exit so model appearance and exports remain unchanged.
 - CD V4 uses its extracted silhouette for physical perimeter walls and a separate optical material built from shared disc helpers, so thickness and reflections never alter native CD variants.
+- Keep raw GLB download copies in the root `3d models` folder; runtime scenes continue using CDN asset pointers so repository downloads do not change rendering.
